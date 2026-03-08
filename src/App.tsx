@@ -1258,14 +1258,14 @@ function GuessSlider({
   const progress = clamp(((safeValue - min) / range) * 100, 0, 100);
 
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 px-4 py-4">
-      <div className="flex items-start justify-between gap-3">
+    <div>
+      <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-slate-900">
-            Сколько бы вы заплатили за б/у?
+            Ваша оценка б/у
           </div>
           <div className="mt-1 text-xs leading-5 text-slate-500">
-            Передвиньте ползунок и зафиксируйте свою оценку.
+            Передвиньте ползунок и выберите цену.
           </div>
         </div>
         <span className="whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-sm font-medium text-slate-700 shadow-sm">
@@ -1742,41 +1742,43 @@ function GameScreen({
 
         <ListingVisual item={item} />
 
-        <div className="mt-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mt-3 rounded-[24px] border border-slate-200 bg-white p-3.5 shadow-sm">
           <div className="min-w-0">
-            <div className="text-[28px] font-bold leading-tight tracking-tight text-slate-900">
+            <div className="truncate text-[22px] font-bold leading-tight tracking-tight text-slate-900">
               {item.title}
             </div>
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2">
             {item.fields.map(([label, fieldValue]) => (
-              <div key={label} className="rounded-2xl bg-slate-50 p-2.5">
-                <div className="text-[11px] text-slate-400">{label}</div>
-                <div className="mt-1 text-xs font-semibold leading-5 text-slate-800">
+              <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                <div className="text-[11px] leading-4 text-slate-400">{label}</div>
+                <div className="mt-0.5 text-xs font-semibold leading-4 text-slate-800">
                   {fieldValue}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+          <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600">
             <div className="mb-1 font-semibold text-slate-900">Описание</div>
             {getRichDescription(item)}
           </div>
         </div>
 
-        <div className="mt-3 rounded-[24px] border border-slate-200 bg-slate-900 p-4 text-white shadow-sm">
-          <div className="text-[11px] uppercase tracking-[0.16em] text-white/60">
-            Цена нового
+        <div className="mt-3 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
+          <div className="rounded-2xl bg-slate-900 px-4 py-3 text-white">
+            <div className="text-[11px] uppercase tracking-[0.16em] text-white/60">
+              Цена нового
+            </div>
+            <div className="mt-1 text-[28px] font-bold tracking-tight">
+              {formatPrice(savings.newPrice)}
+            </div>
           </div>
-          <div className="mt-1.5 text-[30px] font-bold tracking-tight">
-            {formatPrice(savings.newPrice)}
-          </div>
-        </div>
 
-        <div className="mt-3">
-          <GuessSlider item={item} value={guess} onChange={onGuessChange} />
+          <div className="mt-3 rounded-2xl bg-white px-3 py-3 shadow-sm">
+            <GuessSlider item={item} value={guess} onChange={onGuessChange} />
+          </div>
         </div>
 
         <button

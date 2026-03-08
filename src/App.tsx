@@ -280,6 +280,18 @@ const sessionCategoryMeta: Record<
 const getNewPrice = (item: CaseItem) =>
   roundToStep(item.marketPrice * item.newPriceFactor, item.slider.step);
 
+const getSliderBounds = (item: CaseItem) => {
+  const min = item.slider.min;
+  const rawMax = getNewPrice(item);
+  const max = Math.max(min, rawMax);
+  return { min, max };
+};
+
+const normalizeGuess = (item: CaseItem, value: number) => {
+  const { min, max } = getSliderBounds(item);
+  return clamp(roundToStep(value, item.slider.step), min, max);
+};
+
 const getSavings = (item: CaseItem) => {
   const newPrice = getNewPrice(item);
   const rubles = Math.max(newPrice - item.marketPrice, 0);
@@ -290,6 +302,48 @@ const getSavings = (item: CaseItem) => {
     rubles,
     percent,
   };
+};
+
+const getAffordableExamples = (
+  budget: number,
+  selectedCategory: SessionCategory | null,
+  excludedIds: Set<number>,
+) => {
+  const source = selectedCategory
+    ? cases.filter(
+        (item) =>
+          item.sessionCategory === selectedCategory && !excludedIds.has(item.id),
+      )
+    : cases.filter((item) => !excludedIds.has(item.id));
+  const sorted = [...source].sort((a, b) => b.marketPrice - a.marketPrice);
+
+  const picks: CaseItem[] = [];
+  let remaining = budget;
+
+  for (const item of sorted) {
+    if (item.marketPrice <= remaining) {
+      picks.push(item);
+      remaining -= item.marketPrice;
+    }
+    if (picks.length === 2) break;
+  }
+
+  if (picks.length === 0 && sorted.length > 0) {
+    const fallback = [...sorted].sort(
+      (a, b) => Math.abs(a.marketPrice - budget) - Math.abs(b.marketPrice - budget),
+    )[0];
+    return fallback ? [fallback] : [];
+  }
+
+  return picks;
+};
+
+const getInitialGuess = (item: CaseItem) => {
+  const { min, max } = getSliderBounds(item);
+  const range = max - min;
+  const ratios = [0.22, 0.38, 0.64, 0.8];
+  const ratio = ratios[item.id % ratios.length];
+  return normalizeGuess(item, min + range * ratio);
 };
 
 const cases: CaseItem[] = [
@@ -853,43 +907,279 @@ const cases: CaseItem[] = [
     slider: { min: 1000, max: 10000, step: 100 },
     newPriceFactor: 2.1,
   },
+  {
+    id: 31,
+    sessionCategory: "lifestyle",
+    category: "clothing",
+    title: "Джинсовая куртка Levi's",
+    marketPrice: 7800,
+    description: "Размер L, без пятен, есть легкие следы носки на манжетах.",
+    keyInsight:
+      "У повседневной верхней одежды на цену влияют бренд, состояние ткани и общий вид вещи.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Размер", "L"],
+      ["Материал", "Деним"],
+      ["Дефекты", "Легкий износ манжет"],
+    ],
+    slider: { min: 2000, max: 18000, step: 200 },
+    newPriceFactor: 1.95,
+  },
+  {
+    id: 32,
+    sessionCategory: "lifestyle",
+    category: "clothing",
+    title: "Кроссовки Adidas Samba",
+    marketPrice: 9500,
+    description: "Размер 42, коробка есть, кожа без трещин, подошва живая.",
+    keyInsight:
+      "У кроссовок ликвидных моделей цену держат состояние пары и сохранность подошвы.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Размер", "42"],
+      ["Материал", "Кожа"],
+      ["Коробка", "Есть"],
+    ],
+    slider: { min: 2500, max: 22000, step: 500 },
+    newPriceFactor: 1.9,
+  },
+  {
+    id: 33,
+    sessionCategory: "lifestyle",
+    category: "sport",
+    title: "Турник настенный 3-в-1",
+    marketPrice: 4300,
+    description: "Крепеж в комплекте, краска без сколов, использовался дома.",
+    keyInsight:
+      "У домашнего спортивного инвентаря цену держат состояние металла и комплект крепежа.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Тип", "Настенный"],
+      ["Комплект", "Крепеж"],
+      ["Материал", "Сталь"],
+    ],
+    slider: { min: 1000, max: 9000, step: 100 },
+    newPriceFactor: 1.8,
+  },
+  {
+    id: 34,
+    sessionCategory: "lifestyle",
+    category: "watch",
+    title: "Очки Ray-Ban Clubmaster",
+    marketPrice: 8900,
+    description: "Оригинал, линзы без царапин, футляр в комплекте.",
+    keyInsight:
+      "У аксессуаров цену сильнее всего держат бренд, состояние линз и комплектность.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Линзы", "Без царапин"],
+      ["Комплект", "Футляр"],
+      ["Оригинал", "Да"],
+    ],
+    slider: { min: 2500, max: 18000, step: 200 },
+    newPriceFactor: 2.15,
+  },
+  {
+    id: 35,
+    sessionCategory: "lifestyle",
+    category: "sport",
+    title: "Велошлем Giro MIPS",
+    marketPrice: 6200,
+    description: "Размер M, без падений, ремешки целые, есть коробка.",
+    keyInsight:
+      "У спортивной защиты цену двигают бренд, состояние корпуса и отсутствие сильного износа.",
+    fields: [
+      ["Состояние", "Отличное"],
+      ["Размер", "M"],
+      ["Система", "MIPS"],
+      ["Комплект", "Коробка"],
+    ],
+    slider: { min: 1500, max: 14000, step: 200 },
+    newPriceFactor: 1.85,
+  },
+  {
+    id: 36,
+    sessionCategory: "homeLiving",
+    category: "furniture",
+    title: "Комод IKEA MALM, 4 ящика",
+    marketPrice: 12500,
+    description: "Все направляющие целые, фасады без сколов, самовывоз.",
+    keyInsight:
+      "У мебели важны состояние фасадов, фурнитура и удобство перевозки.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Материал", "ЛДСП"],
+      ["Ящики", "4"],
+      ["Доставка", "Самовывоз"],
+    ],
+    slider: { min: 3000, max: 30000, step: 500 },
+    newPriceFactor: 1.75,
+  },
+  {
+    id: 37,
+    sessionCategory: "homeLiving",
+    category: "decor",
+    title: "Зеркало в черной раме 180 см",
+    marketPrice: 6900,
+    description: "Без сколов, крепления в комплекте, стояло в спальне.",
+    keyInsight:
+      "У декора цену больше всего держат состояние поверхности и универсальность вещи.",
+    fields: [
+      ["Состояние", "Отличное"],
+      ["Высота", "180 см"],
+      ["Рама", "Металл"],
+      ["Комплект", "Крепления"],
+    ],
+    slider: { min: 1500, max: 16000, step: 200 },
+    newPriceFactor: 1.95,
+  },
+  {
+    id: 38,
+    sessionCategory: "homeLiving",
+    category: "appliance",
+    title: "Аэрогриль Philips Essential",
+    marketPrice: 9800,
+    description: "Чаша без сильных царапин, работает исправно, есть коробка.",
+    keyInsight:
+      "У мелкой бытовой техники цену держат бренд, состояние чаши и общий внешний вид.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Тип", "Аэрогриль"],
+      ["Чаша", "Без сильного износа"],
+      ["Комплект", "Коробка"],
+    ],
+    slider: { min: 2500, max: 22000, step: 500 },
+    newPriceFactor: 1.82,
+  },
+  {
+    id: 39,
+    sessionCategory: "homeLiving",
+    category: "cookware",
+    title: "Сковорода Staub 28 см",
+    marketPrice: 7400,
+    description: "Эмаль целая, ручка без сколов, пользовались редко.",
+    keyInsight:
+      "У посуды премиум-брендов цену двигают состояние покрытия и узнаваемость марки.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Диаметр", "28 см"],
+      ["Материал", "Чугун"],
+      ["Покрытие", "Эмаль"],
+    ],
+    slider: { min: 2000, max: 16000, step: 200 },
+    newPriceFactor: 2.2,
+  },
+  {
+    id: 40,
+    sessionCategory: "homeLiving",
+    category: "coffee",
+    title: "Капельная кофеварка Melitta",
+    marketPrice: 5600,
+    description: "Колба целая, работает исправно, фильтр в комплекте.",
+    keyInsight:
+      "У кофейной техники цену больше всего держат состояние колбы и исправность нагрева.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Тип", "Капельная"],
+      ["Колба", "Целая"],
+      ["Комплект", "Фильтр"],
+    ],
+    slider: { min: 1500, max: 12000, step: 200 },
+    newPriceFactor: 1.9,
+  },
+  {
+    id: 41,
+    sessionCategory: "electronics",
+    category: "gadget",
+    title: "iPad 9, 64 ГБ, Wi‑Fi",
+    marketPrice: 24500,
+    description: "Экран без трещин, Touch ID работает, есть кабель.",
+    keyInsight:
+      "У планшетов цену сильнее всего держат поколение устройства и состояние экрана.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Память", "64 ГБ"],
+      ["Биометрия", "Touch ID"],
+      ["Комплект", "Кабель"],
+    ],
+    slider: { min: 8000, max: 50000, step: 500 },
+    newPriceFactor: 1.6,
+  },
+  {
+    id: 42,
+    sessionCategory: "electronics",
+    category: "gadget",
+    title: "Колонка JBL Charge 5",
+    marketPrice: 9200,
+    description: "Заряд держит хорошо, царапин мало, кабель в комплекте.",
+    keyInsight:
+      "У портативных колонок цену держат состояние аккумулятора и внешний вид корпуса.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Аккумулятор", "Хороший"],
+      ["Комплект", "Кабель"],
+      ["Влагозащита", "Да"],
+    ],
+    slider: { min: 2500, max: 18000, step: 200 },
+    newPriceFactor: 1.72,
+  },
+  {
+    id: 43,
+    sessionCategory: "electronics",
+    category: "gaming",
+    title: "Nintendo Switch OLED",
+    marketPrice: 23500,
+    description: "Оригинальная док-станция, джойконы без дрифта, коробка есть.",
+    keyInsight:
+      "У портативных консолей цену сильнее всего держат комплект и состояние контроллеров.",
+    fields: [
+      ["Состояние", "Отличное"],
+      ["Модель", "OLED"],
+      ["Джойконы", "Без дрифта"],
+      ["Комплект", "Полный"],
+    ],
+    slider: { min: 10000, max: 40000, step: 500 },
+    newPriceFactor: 1.55,
+  },
+  {
+    id: 44,
+    sessionCategory: "electronics",
+    category: "camera",
+    title: "GoPro HERO10 Black",
+    marketPrice: 19500,
+    description: "Экран без трещин, аккумулятор родной, крепление в комплекте.",
+    keyInsight:
+      "У экшн-камер цену двигают поколение, состояние линзы и набор аксессуаров.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Аккумулятор", "Родной"],
+      ["Линза", "Без дефектов"],
+      ["Комплект", "Крепление"],
+    ],
+    slider: { min: 7000, max: 35000, step: 500 },
+    newPriceFactor: 1.68,
+  },
+  {
+    id: 45,
+    sessionCategory: "electronics",
+    category: "smartphone",
+    title: "Google Pixel 8, 128 ГБ",
+    marketPrice: 39500,
+    description: "Экран без царапин, батарея держит хорошо, полный комплект.",
+    keyInsight:
+      "У смартфонов Google цену сильнее всего держат поколение модели и состояние дисплея.",
+    fields: [
+      ["Состояние", "Отличное"],
+      ["Память", "128 ГБ"],
+      ["Экран", "Без дефектов"],
+      ["Комплект", "Полный"],
+    ],
+    slider: { min: 15000, max: 70000, step: 1000 },
+    newPriceFactor: 1.48,
+  },
 ];
 
-const richDescriptions: Record<number, string> = {
-  1: "Покупался для себя, продают после обновления модели. Носился в чехле, в ремонте не был; из нюансов — аккумулятор уже не новый.",
-  2: "Личный телефон, продают после перехода на новую модель. Использовался спокойно, без жесткой эксплуатации; важен общий уровень ликвидности флагмана.",
-  3: "Массовый смартфон после года обычного использования. Продают из-за смены бренда; здесь легко переоценить свежесть модели относительно рынка.",
-  4: "Стоял в гостиной, продают из-за переезда. Использовался дома без аренды; важный нюанс — самовывоз и практичность для нового владельца.",
-  5: "Служил на кухне, продают после обновления мебели. Поверхность живая, но вещь уже не выглядит новой; стулья в комплект не входят.",
-  6: "Использовалось для домашней работы, продают после апгрейда рабочего места. По механике все ок; ключевой вопрос — сколько в кресле осталось комфорта.",
-  7: "Обычная домашняя микроволновка, продают из-за перехода на встраиваемую технику. Пользовались аккуратно; из нюансов — без дополнительных режимов вроде гриля.",
-  8: "Пылесос из квартиры, продают после покупки более свежей модели. Использовался регулярно, но бережно; решает, сколько в нем осталось ресурса.",
-  9: "Стояла в квартире, продают после покупки более вместительной модели. Работала в обычном семейном режиме; важно, насколько спокойно она проживет дальше.",
-  10: "Набор продают после обновления кухни. Пользовались редко; важно не переплатить просто за известный бренд, если комплект уже не новый.",
-  11: "Стоял в шкафу и доставался по праздникам, продают для освобождения места. Главная ценность тут — полный набор и аккуратное состояние.",
-  12: "Носили один сезон, продают после смены гардероба. Вещь свежая, но уже с вторичного рынка; важно не переплатить только за бренд.",
-  13: "Городская пара, продают потому что перестал подходить размер. Носились аккуратно; при оценке важно не смотреть только на логотип бренда.",
-  14: "Базовое сезонное пальто, продают после смены размера. Носилось аккуратно; цену здесь сильно держит общее ощущение ухоженной вещи.",
-  15: "Использовался для прогулок и лесопарка, продают после перехода на другой формат велосипеда. Без экстрима; ключевое — класс навески и остаточный ресурс трансмиссии.",
-  16: "Стояла дома для спокойных тренировок, продают из-за переезда. Не коммерческая эксплуатация; важный нюанс — насколько техника ощущается беспроблемной.",
-  17: "Хранились дома, продают после перехода в зал. Лот прагматичный; ошибка обычно в том, что его мысленно сравнивают с новым комплектом.",
-  18: "Была частью интерьера спальни, продают после обновления обстановки. Вещь не первой необходимости; рынок тут особенно чувствителен к ощущению выгодной сделки.",
-  19: "Личные наушники, продают после перехода на полноразмерную модель. Рабочие и ликвидные; из нюансов — потертости кейса и чувствительность категории к состоянию батареи.",
-  20: "Носили в обычном режиме, продают после покупки более свежей модели. Категория массовая; важно почувствовать, насколько часы еще актуальны на фоне новых поколений.",
-  21: "Любительская камера для поездок и семейных съемок, продают при переходе на беззеркалку. Не коммерческая нагрузка; решает понятный и честный остаточный ресурс.",
-  22: "Использовался в спальне летом, продают после установки сплит-системы. Вне сезона такие лоты спокойнее по спросу; важно учитывать сезонность цены.",
-  23: "Домашняя консоль, продают из-за редкого использования. Категория ликвидная; на цену сильно влияет комплект и общее ощущение свежести устройства.",
-  24: "Использовали дома, продают после переезда и сокращения техники на кухне. После обслуживания; важен не только бренд, но и ощущение остаточного ресурса.",
-  25: "Работала на небольшом участке, продают потому что техника больше не нужна. Не тяжелая эксплуатация; легко переплатить, если смотреть только на бренд.",
-  26: "Использовался для городских поездок, продают потому что личный транспорт стал не нужен. Не хранился зимой на улице; решает остаточный ресурс батареи и пробег.",
-  27: "Лежал в жилой комнате, продают после смены интерьера. После чистки и в аккуратном состоянии; покупатель часто сравнивает такие вещи даже с акциями на новые.",
-  28: "Робот-пылесос из обычной квартиры, продают после перехода на более новую модель. Рабочий и понятный; важно, насколько он готов к повседневной жизни без вложений.",
-  29: "Стоял в спальне в отопительный сезон, продают после переезда. Категория утилитарная; рынок тут быстро показывает, где заканчивается разумная цена.",
-  30: "Стоял в серванте и доставался редко, продают после обновления интерьера. Важны цельность набора и аккуратный вид; без реальной редкости рынок не прощает завышение.",
-};
-
-const getRichDescription = (item: CaseItem) =>
-  richDescriptions[item.id] || item.description;
+const getRichDescription = (item: CaseItem) => item.description;
 
 function ListingVisual({ item }: { item: CaseItem }) {
   const visual = categoryVisuals[item.category];
@@ -970,11 +1260,13 @@ function GuessSlider({
   value: number;
   onChange: (next: number) => void;
 }) {
-  const progress =
-    ((value - item.slider.min) / (item.slider.max - item.slider.min)) * 100;
+  const { min, max } = getSliderBounds(item);
+  const safeValue = normalizeGuess(item, value);
+  const range = Math.max(max - min, item.slider.step);
+  const progress = clamp(((safeValue - min) / range) * 100, 0, 100);
 
   return (
-    <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+    <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 px-6 py-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-slate-900">
@@ -984,33 +1276,33 @@ function GuessSlider({
             Передвиньте ползунок и зафиксируйте свою оценку.
           </div>
         </div>
-        <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700 shadow-sm">
-          {formatPrice(value)}
+        <span className="whitespace-nowrap rounded-full bg-white px-3 py-1 font-medium text-slate-700 shadow-sm">
+          {formatPrice(safeValue)}
         </span>
       </div>
 
-      <div className="mt-5">
-        <div className="relative h-10">
-          <div className="absolute left-0 right-0 top-1/2 h-3 -translate-y-1/2 rounded-full bg-slate-200" />
+      <div className="mt-6 -mx-2 px-2">
+        <div className="relative h-12">
+          <div className="absolute left-0 right-0 top-1/2 h-4 -translate-y-1/2 rounded-full bg-slate-200" />
           <div
-            className="absolute left-0 top-1/2 h-3 -translate-y-1/2 rounded-full bg-gradient-to-r from-sky-500 via-blue-500 to-emerald-500"
+            className="absolute left-0 top-1/2 h-4 -translate-y-1/2 rounded-full bg-gradient-to-r from-sky-500 via-blue-500 to-emerald-500"
             style={{ width: `${progress}%` }}
           />
           <input
             type="range"
-            min={item.slider.min}
-            max={item.slider.max}
+            min={min}
+            max={max}
             step={item.slider.step}
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            className="absolute inset-0 z-10 h-10 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:mt-[-12px] [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-slate-900 [&::-webkit-slider-thumb]:shadow-[0_8px_20px_rgba(15,23,42,0.22)] [&::-moz-range-track]:h-2 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:h-8 [&::-moz-range-thumb]:w-8 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-slate-900"
+            value={safeValue}
+            onChange={(e) => onChange(normalizeGuess(item, Number(e.target.value)))}
+            className="absolute inset-0 z-10 h-12 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-4 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:mt-[-12px] [&::-webkit-slider-thumb]:h-10 [&::-webkit-slider-thumb]:w-10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-slate-900 [&::-webkit-slider-thumb]:shadow-[0_10px_24px_rgba(15,23,42,0.22)] [&::-moz-range-track]:h-4 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:h-10 [&::-moz-range-thumb]:w-10 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-slate-900"
           />
         </div>
       </div>
 
-      <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
-        <span>{formatPrice(item.slider.min)}</span>
-        <span>{formatPrice(item.slider.max)}</span>
+      <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+        <span>{formatPrice(min)}</span>
+        <span>{formatPrice(max)}</span>
       </div>
     </div>
   );
@@ -1066,12 +1358,23 @@ function StartScreen({
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`rounded-2xl p-2 ${isSelected ? "bg-white/12" : "bg-slate-100"}`}>
-                        <Icon size={18} className={isSelected ? "text-white" : "text-slate-700"} />
+                      <div
+                        className={`rounded-2xl p-2 ${
+                          isSelected ? "bg-white/12" : "bg-slate-100"
+                        }`}
+                      >
+                        <Icon
+                          size={18}
+                          className={isSelected ? "text-white" : "text-slate-700"}
+                        />
                       </div>
                       <div>
                         <div className="font-semibold">{meta.title}</div>
-                        <div className={`mt-1 text-sm ${isSelected ? "text-white/75" : "text-slate-500"}`}>
+                        <div
+                          className={`mt-1 text-sm ${
+                            isSelected ? "text-white/75" : "text-slate-500"
+                          }`}
+                        >
                           {meta.subtitle}
                         </div>
                       </div>
@@ -1092,15 +1395,14 @@ function StartScreen({
               <div className="mt-1 text-slate-500">на кейс</div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-2xl font-bold text-slate-900">цена нового</div>
-              <div className="mt-1 text-slate-500">как ориентир</div>
+              <div className="text-2xl font-bold text-slate-900">+2</div>
+              <div className="mt-1 text-slate-500">примера выгоды</div>
             </div>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 text-sm leading-6 text-slate-600">
-            В каждой карточке сразу показана цена такого же товара новым. Твоя
-            задача — понять, сколько разумно стоит б/у и где на Авито появляется
-            настоящая выгода.
+            В каждой категории теперь больше карточек: 5 попадут в игру, а еще 2
+            неиспользованных товара покажут, что можно купить на сумму твоей выгоды.
           </div>
 
           <button
@@ -1126,9 +1428,22 @@ function FeedbackScreen({
   round: number;
   total: number;
 }) {
-  const deviationPercent = Math.round(result.deviation * 100);
   const status = getRoundStatus(result.deviation, result.timedOut);
   const savings = getSavings(result.item);
+  const deviationPercent = Math.round(result.deviation * 100);
+  const isAccurate = !result.timedOut && result.deviation <= 0.18;
+  const priceTone = result.timedOut
+    ? "text-slate-900"
+    : isAccurate
+      ? "text-emerald-700"
+      : "text-rose-700";
+  const deviationTone = result.timedOut
+    ? "bg-amber-500"
+    : result.deviation <= 0.08
+      ? "bg-emerald-500"
+      : result.deviation <= 0.18
+        ? "bg-sky-500"
+        : "bg-rose-500";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_28%),#f8fafc] p-4">
@@ -1144,72 +1459,59 @@ function FeedbackScreen({
           <div className="text-[28px] font-extrabold tracking-tight">{status.title}</div>
           <div className="mt-1 text-sm opacity-80">
             {result.timedOut
-              ? "Таймер закончился, поэтому показываем ориентир по лоту и реальную выгоду покупки б/у."
-              : "Сравните свою оценку с рыночной ценой и посмотрите, насколько выгоднее покупать этот товар б/у, а не новым."}
+              ? "Таймер закончился, поэтому показываем реальную цену б/у и сколько можно сэкономить по сравнению с новым товаром."
+              : "Сравните свою оценку с рыночной ценой б/у и посмотрите, насколько выгоднее покупка на Авито по сравнению с новым товаром."}
           </div>
         </div>
 
         <h2 className="mt-5 text-2xl font-bold text-slate-900">{result.item.title}</h2>
 
         <div className="mt-6 grid gap-3">
-          <div className="rounded-3xl bg-slate-50 p-4">
-            <div className="text-sm text-slate-500">Ваша оценка</div>
-            <div className="mt-1 text-2xl font-bold text-slate-900">
-              {result.timedOut ? "—" : formatPrice(result.guess)}
+          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/80 p-5">
+            <div className="text-xl leading-8 text-emerald-900">
+              Выгоднее на <span className="font-bold">{formatPrice(savings.rubles)}</span>, чем новое за {formatPrice(savings.newPrice)}
+            </div>
+            <div className="mt-2 text-sm text-emerald-800">
+              Около {savings.percent}% экономии при покупке на Авито
             </div>
           </div>
 
-          <div className="rounded-3xl bg-slate-900 p-4 text-white">
-            <div className="text-sm text-white/70">Рыночная цена б/у</div>
-            <div className="mt-1 text-2xl font-bold">
-              {formatPrice(result.item.marketPrice)}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-3xl border border-slate-200 p-4">
-              <div className="text-sm text-slate-500">Цена нового</div>
-              <div className="mt-1 text-xl font-bold text-slate-900">
-                {formatPrice(savings.newPrice)}
+          <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <div className="text-sm text-slate-500">Ваша оценка</div>
+                <div className={`mt-1 text-2xl font-bold ${priceTone}`}>
+                  {result.timedOut ? "—" : formatPrice(result.guess)}
+                </div>
               </div>
-            </div>
 
-            <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-4">
-              <div className="text-sm text-emerald-700">Выгода покупки б/у</div>
-              <div className="mt-1 text-xl font-bold text-emerald-800">
-                {formatPrice(savings.rubles)}
-              </div>
-              <div className="mt-1 text-xs text-emerald-700">
-                Около {savings.percent}% дешевле нового
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <div className="text-sm text-slate-500">Рыночная цена б/у</div>
+                <div className="mt-1 text-2xl font-bold text-slate-900">
+                  {formatPrice(result.item.marketPrice)}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 p-4">
-            <div className="text-sm text-slate-500">Отклонение</div>
-            <div className="mt-1 text-2xl font-bold text-slate-900">
-              {deviationPercent}%
+          <div className="rounded-3xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-slate-700">Отклонение от рынка</span>
+              <span className="font-semibold text-slate-900">
+                {result.timedOut ? "Тайм-аут" : `${deviationPercent}%`}
+              </span>
             </div>
-            <div className="mt-2 h-2 rounded-full bg-slate-100">
+            <div className="mt-3 h-3 rounded-full bg-slate-100">
               <div
-                className={`h-2 rounded-full ${
-                  deviationPercent <= 8
-                    ? "bg-emerald-500"
-                    : deviationPercent <= 18
-                      ? "bg-sky-500"
-                      : "bg-rose-500"
-                }`}
+                className={`h-3 rounded-full ${deviationTone}`}
                 style={{ width: `${clamp(deviationPercent, 2, 100)}%` }}
               />
             </div>
+            <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-5 rounded-3xl border border-sky-100 bg-sky-50/70 p-4 text-sm leading-6 text-slate-700">
-          <div className="mb-1 font-semibold text-slate-900">
-            На что стоило обратить внимание
-          </div>
-          {result.item.keyInsight}
         </div>
       </div>
     </div>
@@ -1229,6 +1531,16 @@ function ResultScreen({
   const avgDeviation =
     results.reduce((sum, item) => sum + item.deviation, 0) /
     Math.max(results.length, 1);
+  const totalSavings = results.reduce(
+    (sum, item) => sum + getSavings(item.item).rubles,
+    0,
+  );
+  const playedIds = new Set(results.map((item) => item.item.id));
+  const affordableExamples = getAffordableExamples(
+    totalSavings,
+    selectedCategory,
+    playedIds,
+  );
   const best =
     answered.length > 0
       ? [...answered].sort((a, b) => a.deviation - b.deviation)[0]
@@ -1260,17 +1572,53 @@ function ResultScreen({
           </div>
         )}
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-3xl bg-slate-900 p-4 text-white">
-            <div className="text-sm text-white/70">Среднее отклонение</div>
-            <div className="mt-1 text-3xl font-bold">
-              {Math.round(avgDeviation * 100)}%
+        <div className="mt-6 grid gap-3">
+          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/80 p-5">
+            <div className="text-sm font-semibold uppercase tracking-[0.14em] text-emerald-700">
+              Суммарная выгода
             </div>
+            <div className="mt-2 text-3xl font-bold tracking-tight text-emerald-900">
+              {formatPrice(totalSavings)}
+            </div>
+            <div className="mt-2 text-sm text-emerald-800">
+              вы сэкономили, если бы купили это все на Авито
+            </div>
+            {affordableExamples.length > 0 && (
+              <div className="mt-4 rounded-2xl bg-white/80 p-4">
+                <div className="text-sm font-medium text-slate-900">
+                  На эти деньги можно купить
+                </div>
+                <div className="mt-3 space-y-2">
+                  {affordableExamples.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded-2xl bg-white px-3 py-3 text-sm shadow-sm"
+                    >
+                      <div className="min-w-0 pr-3 font-medium text-slate-900">
+                        {item.title}
+                      </div>
+                      <div className="whitespace-nowrap text-slate-600">
+                        {formatPrice(item.marketPrice)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="rounded-3xl bg-slate-50 p-4">
-            <div className="text-sm text-slate-500">Отвечено вовремя</div>
-            <div className="mt-1 text-3xl font-bold text-slate-900">
-              {answered.length}/{results.length}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-3xl bg-slate-900 p-4 text-white">
+              <div className="text-sm text-white/70">Среднее отклонение</div>
+              <div className="mt-1 text-3xl font-bold">
+                {Math.round(avgDeviation * 100)}%
+              </div>
+            </div>
+            <div className="rounded-3xl bg-slate-50 p-4">
+              <div className="text-sm text-slate-500">Отвечено вовремя</div>
+              <div className="mt-1 text-3xl font-bold text-slate-900">
+                {answered.length}/{results.length}
+              </div>
             </div>
           </div>
         </div>
@@ -1361,11 +1709,11 @@ function GameScreen({
   if (!item) return null;
 
   const savings = getSavings(item);
-  const timerProgress = (timeLeft / CARD_TIME) * 100;
+  const timerProgress = clamp((timeLeft / CARD_TIME) * 100, 0, 100);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(16,185,129,0.08),transparent_24%),#f8fafc] px-4 py-5">
-      <div className="mx-auto max-w-[430px]">
+      <div className="mx-auto max-w-[560px]">
         <div className="mb-4 rounded-[28px] border border-white/70 bg-white/75 px-4 py-3 shadow-sm backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <div>
@@ -1434,10 +1782,6 @@ function GameScreen({
             <div className="mt-2 text-4xl font-bold tracking-tight">
               {formatPrice(savings.newPrice)}
             </div>
-            <div className="mt-2 text-sm leading-6 text-white/75">
-              Представьте, что такой же товар вы покупаете новым. Теперь оцените,
-              сколько честно стоит его б/у версия с учетом состояния и комплекта.
-            </div>
           </div>
 
           <div className="mt-5">
@@ -1475,22 +1819,43 @@ function runSelfChecks() {
     Math.round(getDeviation(120, 100) * 100) === 20,
     "getDeviation percentage failed",
   );
-  console.assert(cases.length === 30, "Expected 30 cases in prototype data");
+  console.assert(cases.length === 45, "Expected 45 cases in prototype data");
   console.assert(
-    cases.filter((item) => item.sessionCategory === "electronics").length >= 5,
-    "Need at least 5 electronics items",
+    cases.filter((item) => item.sessionCategory === "electronics").length >= 12,
+    "Need at least 12 electronics items",
   );
   console.assert(
-    cases.filter((item) => item.sessionCategory === "homeLiving").length >= 5,
-    "Need at least 5 homeLiving items",
+    cases.filter((item) => item.sessionCategory === "homeLiving").length >= 12,
+    "Need at least 12 homeLiving items",
   );
   console.assert(
-    cases.filter((item) => item.sessionCategory === "lifestyle").length >= 5,
-    "Need at least 5 lifestyle items",
+    cases.filter((item) => item.sessionCategory === "lifestyle").length >= 12,
+    "Need at least 12 lifestyle items",
   );
   console.assert(
     getNewPrice(cases[0]) > cases[0].marketPrice,
     "New price hint must be above market price",
+  );
+  console.assert(
+    getSliderBounds(cases[0]).max === getNewPrice(cases[0]),
+    "Slider max must match new price",
+  );
+  console.assert(
+    normalizeGuess(cases[0], 999999) === getSliderBounds(cases[0]).max,
+    "normalizeGuess should clamp upper bound",
+  );
+  console.assert(
+    getInitialGuess(cases[0]) !==
+      normalizeGuess(
+        cases[0],
+        (getSliderBounds(cases[0]).min + getSliderBounds(cases[0]).max) / 2,
+      ),
+    "Initial guess should not default to exact midpoint",
+  );
+  console.assert(
+    getAffordableExamples(30000, "electronics", new Set([1, 2, 3, 7, 8]))
+      .every((item) => !new Set([1, 2, 3, 7, 8]).has(item.id)),
+    "Affordable examples must exclude played items",
   );
 }
 
@@ -1514,9 +1879,6 @@ export default function AvitoPriceSensePrototype() {
     if (!selectedCategory) return [] as CaseItem[];
     return cases.filter((item) => item.sessionCategory === selectedCategory);
   }, [selectedCategory]);
-
-  const getInitialGuess = (item: CaseItem) =>
-    roundToStep((item.slider.min + item.slider.max) / 2, item.slider.step);
 
   const startGame = () => {
     if (!selectedCategory) return;
@@ -1552,7 +1914,7 @@ export default function AvitoPriceSensePrototype() {
     timedOut = false,
   ) => {
     const fallbackGuess = getInitialGuess(item);
-    const finalGuess = timedOut ? fallbackGuess : selectedGuess;
+    const finalGuess = timedOut ? fallbackGuess : normalizeGuess(item, selectedGuess);
     const deviation = timedOut ? 1 : getDeviation(finalGuess, item.marketPrice);
 
     const result: GameResult = {

@@ -21,17 +21,16 @@ import {
   Trophy,
   CircleDollarSign,
   Sparkles,
-  Home,
+  House,
   Cpu,
-  Tag,
 } from "lucide-react";
 
 const ROUND_LIMIT = 5;
 const CARD_TIME = 30;
-const FEEDBACK_DELAY = 2200;
+const FEEDBACK_DELAY = 3200;
 
 const formatPrice = (value: number) =>
-  `${new Intl.NumberFormat("ru-RU").format(Math.round(value))} ₽`;
+  `${new Intl.NumberFormat("ru-RU").format(Math.round(value))} ₽`;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -269,7 +268,7 @@ const sessionCategoryMeta: Record<
   homeLiving: {
     title: "Home & Living",
     subtitle: "Мебель, дом, кухня, интерьер и бытовые товары",
-    icon: Home,
+    icon: House,
   },
   electronics: {
     title: "Электроника",
@@ -280,6 +279,18 @@ const sessionCategoryMeta: Record<
 
 const getNewPrice = (item: CaseItem) =>
   roundToStep(item.marketPrice * item.newPriceFactor, item.slider.step);
+
+const getSavings = (item: CaseItem) => {
+  const newPrice = getNewPrice(item);
+  const rubles = Math.max(newPrice - item.marketPrice, 0);
+  const percent = Math.round((rubles / Math.max(newPrice, 1)) * 100);
+
+  return {
+    newPrice,
+    rubles,
+    percent,
+  };
+};
 
 const cases: CaseItem[] = [
   {
@@ -964,15 +975,22 @@ function GuessSlider({
 
   return (
     <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
-      <div className="flex items-center justify-between gap-3 text-sm text-slate-500">
-        <span>Ваша оценка</span>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-slate-900">
+            Сколько бы вы заплатили за б/у?
+          </div>
+          <div className="mt-1 text-sm text-slate-500">
+            Передвиньте ползунок и зафиксируйте свою оценку.
+          </div>
+        </div>
         <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700 shadow-sm">
           {formatPrice(value)}
         </span>
       </div>
 
       <div className="mt-5">
-        <div className="relative h-12">
+        <div className="relative h-10">
           <div className="absolute left-0 right-0 top-1/2 h-3 -translate-y-1/2 rounded-full bg-slate-200" />
           <div
             className="absolute left-0 top-1/2 h-3 -translate-y-1/2 rounded-full bg-gradient-to-r from-sky-500 via-blue-500 to-emerald-500"
@@ -985,7 +1003,7 @@ function GuessSlider({
             step={item.slider.step}
             value={value}
             onChange={(e) => onChange(Number(e.target.value))}
-            className="absolute inset-0 z-10 h-12 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-12 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:mt-0 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-slate-900 [&::-webkit-slider-thumb]:shadow-[0_8px_20px_rgba(15,23,42,0.22)] [&::-moz-range-track]:h-12 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:h-8 [&::-moz-range-thumb]:w-8 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-slate-900"
+            className="absolute inset-0 z-10 h-10 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:mt-[-12px] [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-slate-900 [&::-webkit-slider-thumb]:shadow-[0_8px_20px_rgba(15,23,42,0.22)] [&::-moz-range-track]:h-2 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:h-8 [&::-moz-range-thumb]:w-8 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-slate-900"
           />
         </div>
       </div>
@@ -1017,7 +1035,9 @@ function StartScreen({
           </div>
           <h1 className="mt-4 text-3xl font-bold leading-tight">Чувство цены</h1>
           <p className="mt-3 text-sm leading-6 text-white/88">
-            Оцените, насколько хорошо вы чувствуете рынок в знакомой категории. Внутри сессии будут только похожие товары.
+            На Авито выгодно покупать вещи с историей, если умеешь быстро
+            понимать рынок. Смотри на цену нового товара и оценивай, сколько
+            разумно стоит его б/у версия.
           </p>
         </div>
 
@@ -1072,13 +1092,15 @@ function StartScreen({
               <div className="mt-1 text-slate-500">на кейс</div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-2xl font-bold text-slate-900">1</div>
-              <div className="mt-1 text-slate-500">подсказка</div>
+              <div className="text-2xl font-bold text-slate-900">цена нового</div>
+              <div className="mt-1 text-slate-500">как ориентир</div>
             </div>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 text-sm leading-6 text-slate-600">
-            Один раз за сессию можно посмотреть цену такого же товара новым — это даст ориентир, но не точную рыночную цену б/у лота.
+            В каждой карточке сразу показана цена такого же товара новым. Твоя
+            задача — понять, сколько разумно стоит б/у и где на Авито появляется
+            настоящая выгода.
           </div>
 
           <button
@@ -1106,6 +1128,7 @@ function FeedbackScreen({
 }) {
   const deviationPercent = Math.round(result.deviation * 100);
   const status = getRoundStatus(result.deviation, result.timedOut);
+  const savings = getSavings(result.item);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_28%),#f8fafc] p-4">
@@ -1121,8 +1144,8 @@ function FeedbackScreen({
           <div className="text-[28px] font-extrabold tracking-tight">{status.title}</div>
           <div className="mt-1 text-sm opacity-80">
             {result.timedOut
-              ? "Таймер закончился, поэтому показали ориентир по этому лоту."
-              : "Сравните свою оценку с рыночной ценой и посмотрите, что сильнее всего двигает стоимость."}
+              ? "Таймер закончился, поэтому показываем ориентир по лоту и реальную выгоду покупки б/у."
+              : "Сравните свою оценку с рыночной ценой и посмотрите, насколько выгоднее покупать этот товар б/у, а не новым."}
           </div>
         </div>
 
@@ -1137,9 +1160,28 @@ function FeedbackScreen({
           </div>
 
           <div className="rounded-3xl bg-slate-900 p-4 text-white">
-            <div className="text-sm text-white/70">Рыночная цена</div>
+            <div className="text-sm text-white/70">Рыночная цена б/у</div>
             <div className="mt-1 text-2xl font-bold">
               {formatPrice(result.item.marketPrice)}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-3xl border border-slate-200 p-4">
+              <div className="text-sm text-slate-500">Цена нового</div>
+              <div className="mt-1 text-xl font-bold text-slate-900">
+                {formatPrice(savings.newPrice)}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-4">
+              <div className="text-sm text-emerald-700">Выгода покупки б/у</div>
+              <div className="mt-1 text-xl font-bold text-emerald-800">
+                {formatPrice(savings.rubles)}
+              </div>
+              <div className="mt-1 text-xs text-emerald-700">
+                Около {savings.percent}% дешевле нового
+              </div>
             </div>
           </div>
 
@@ -1208,7 +1250,10 @@ function ResultScreen({
         <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
           {label.title}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-slate-600">{label.subtitle}</p>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          {label.subtitle} Если видишь цену нового и быстро понимаешь честную
+          цену б/у, на Авито проще находить реально выгодные покупки.
+        </p>
         {selectedCategory && (
           <div className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
             Категория: {sessionCategoryMeta[selectedCategory].title}
@@ -1271,7 +1316,7 @@ function ResultScreen({
                     {index + 1}. {result.item.title}
                   </div>
                   <div className="text-slate-500">
-                    Рынок: {formatPrice(result.item.marketPrice)}
+                    Б/у: {formatPrice(result.item.marketPrice)} · Новое: {formatPrice(getNewPrice(result.item))}
                   </div>
                 </div>
                 <div className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
@@ -1303,9 +1348,6 @@ function GameScreen({
   guess,
   onGuessChange,
   onSubmit,
-  hintUsed,
-  onUseHint,
-  hintValue,
 }: {
   deck: CaseItem[];
   roundIndex: number;
@@ -1313,38 +1355,48 @@ function GameScreen({
   guess: number;
   onGuessChange: (next: number) => void;
   onSubmit: () => void;
-  hintUsed: boolean;
-  onUseHint: () => void;
-  hintValue: number | null;
 }) {
   const item = deck[roundIndex];
 
   if (!item) return null;
 
+  const savings = getSavings(item);
+  const timerProgress = (timeLeft / CARD_TIME) * 100;
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(16,185,129,0.08),transparent_24%),#f8fafc] px-4 py-5">
       <div className="mx-auto max-w-[430px]">
-        <div className="mb-4 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/75 px-4 py-3 shadow-sm backdrop-blur-xl">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
-              Серия
+        <div className="mb-4 rounded-[28px] border border-white/70 bg-white/75 px-4 py-3 shadow-sm backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                Серия
+              </div>
+              <div className="mt-1 text-xl font-bold text-slate-900">
+                {roundIndex + 1} / {ROUND_LIMIT}
+              </div>
             </div>
-            <div className="mt-1 text-xl font-bold text-slate-900">
-              {roundIndex + 1} / {ROUND_LIMIT}
+            <div className="text-right">
+              <div className="flex items-center justify-end gap-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                <TimerReset size={14} />
+                Таймер
+              </div>
+              <div
+                className={`mt-1 text-xl font-bold ${
+                  timeLeft <= 7 ? "text-rose-500" : "text-slate-900"
+                }`}
+              >
+                {timeLeft}с
+              </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="flex items-center justify-end gap-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
-              <TimerReset size={14} />
-              Таймер
-            </div>
+          <div className="mt-3 h-2 rounded-full bg-slate-100">
             <div
-              className={`mt-1 text-xl font-bold ${
-                timeLeft <= 7 ? "text-rose-500" : "text-slate-900"
+              className={`h-2 rounded-full transition-all ${
+                timeLeft <= 7 ? "bg-rose-500" : "bg-slate-900"
               }`}
-            >
-              {timeLeft}с
-            </div>
+              style={{ width: `${timerProgress}%` }}
+            />
           </div>
         </div>
 
@@ -1358,12 +1410,6 @@ function GameScreen({
               </div>
             </div>
 
-            {hintValue !== null && (
-              <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                Цена такого товара новым: <span className="font-semibold">{formatPrice(hintValue)}</span>
-              </div>
-            )}
-
             <div className="mt-4 grid grid-cols-2 gap-3">
               {item.fields.map(([label, value]) => (
                 <div key={label} className="rounded-2xl bg-slate-50 p-3">
@@ -1374,22 +1420,28 @@ function GameScreen({
                 </div>
               ))}
             </div>
+
             <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
               <div className="mb-1 font-semibold text-slate-900">Описание</div>
               {getRichDescription(item)}
             </div>
           </div>
 
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 rounded-[28px] border border-slate-200 bg-slate-900 p-5 text-white shadow-sm">
+            <div className="text-xs uppercase tracking-[0.18em] text-white/60">
+              Цена нового
+            </div>
+            <div className="mt-2 text-4xl font-bold tracking-tight">
+              {formatPrice(savings.newPrice)}
+            </div>
+            <div className="mt-2 text-sm leading-6 text-white/75">
+              Представьте, что такой же товар вы покупаете новым. Теперь оцените,
+              сколько честно стоит его б/у версия с учетом состояния и комплекта.
+            </div>
+          </div>
+
+          <div className="mt-5">
             <GuessSlider item={item} value={guess} onChange={onGuessChange} />
-            <button
-              onClick={onUseHint}
-              disabled={hintUsed}
-              className="flex w-full items-center justify-center gap-2 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition enabled:hover:border-slate-300 enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <Tag size={16} />
-              Посмотреть цену нового
-            </button>
           </div>
 
           <button
@@ -1455,8 +1507,6 @@ export default function AvitoPriceSensePrototype() {
   const [feedbackResult, setFeedbackResult] = useState<GameResult | null>(null);
   const [selectedCategory, setSelectedCategory] =
     useState<SessionCategory | null>(null);
-  const [hintUsed, setHintUsed] = useState(false);
-  const [hintValue, setHintValue] = useState<number | null>(null);
 
   const currentItem = deck[roundIndex];
 
@@ -1478,8 +1528,6 @@ export default function AvitoPriceSensePrototype() {
     setResults([]);
     setFeedbackResult(null);
     setTimeLeft(CARD_TIME);
-    setHintUsed(false);
-    setHintValue(null);
     setGuess(firstItem ? getInitialGuess(firstItem) : 0);
     setPhase("playing");
   };
@@ -1495,7 +1543,6 @@ export default function AvitoPriceSensePrototype() {
     setRoundIndex(nextIndex);
     setTimeLeft(CARD_TIME);
     setGuess(getInitialGuess(nextItem));
-    setHintValue(null);
     setPhase("playing");
   };
 
@@ -1525,12 +1572,6 @@ export default function AvitoPriceSensePrototype() {
     pushResult(currentItem, guess, false);
   };
 
-  const useHint = () => {
-    if (!currentItem || hintUsed) return;
-    setHintUsed(true);
-    setHintValue(getNewPrice(currentItem));
-  };
-
   const restartToMenu = () => {
     setPhase("start");
     setDeck([]);
@@ -1539,8 +1580,6 @@ export default function AvitoPriceSensePrototype() {
     setTimeLeft(CARD_TIME);
     setResults([]);
     setFeedbackResult(null);
-    setHintUsed(false);
-    setHintValue(null);
   };
 
   useEffect(() => {
@@ -1606,9 +1645,6 @@ export default function AvitoPriceSensePrototype() {
       guess={guess}
       onGuessChange={setGuess}
       onSubmit={submitGuess}
-      hintUsed={hintUsed}
-      onUseHint={useHint}
-      hintValue={hintValue}
     />
   );
 }

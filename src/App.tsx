@@ -282,8 +282,7 @@ const getNewPrice = (item: CaseItem) =>
 
 const getSliderBounds = (item: CaseItem) => {
   const min = item.slider.min;
-  const rawMax = getNewPrice(item);
-  const max = Math.max(min, rawMax);
+  const max = Math.max(item.slider.min, getNewPrice(item));
   return { min, max };
 };
 
@@ -308,15 +307,15 @@ const getAffordableExamples = (
   budget: number,
   selectedCategory: SessionCategory | null,
   excludedIds: Set<number>,
+  sourceCases: CaseItem[],
 ) => {
-  const source = selectedCategory
-    ? cases.filter(
-        (item) =>
-          item.sessionCategory === selectedCategory && !excludedIds.has(item.id),
-      )
-    : cases.filter((item) => !excludedIds.has(item.id));
-  const sorted = [...source].sort((a, b) => b.marketPrice - a.marketPrice);
+  const filtered = sourceCases.filter(
+    (item) =>
+      !excludedIds.has(item.id) &&
+      (selectedCategory ? item.sessionCategory === selectedCategory : true),
+  );
 
+  const sorted = [...filtered].sort((a, b) => b.marketPrice - a.marketPrice);
   const picks: CaseItem[] = [];
   let remaining = budget;
 
@@ -329,10 +328,10 @@ const getAffordableExamples = (
   }
 
   if (picks.length === 0 && sorted.length > 0) {
-    const fallback = [...sorted].sort(
+    const closest = [...sorted].sort(
       (a, b) => Math.abs(a.marketPrice - budget) - Math.abs(b.marketPrice - budget),
     )[0];
-    return fallback ? [fallback] : [];
+    return closest ? [closest] : [];
   }
 
   return picks;
@@ -390,8 +389,7 @@ const cases: CaseItem[] = [
     category: "smartphone",
     title: "Xiaomi Redmi Note 12, 128 ГБ",
     marketPrice: 14500,
-    description:
-      "Покупался год назад, батарея живая, в чехле с первого дня.",
+    description: "Покупался год назад, батарея живая, в чехле с первого дня.",
     keyInsight:
       "В среднем сегменте сильнее всего на цену влияет год покупки и общее состояние корпуса.",
     fields: [
@@ -409,8 +407,7 @@ const cases: CaseItem[] = [
     category: "furniture",
     title: "Диван-кровать 3-местный",
     marketPrice: 26000,
-    description:
-      "Механизм раскладывания исправен, ткань без пятен, самовывоз.",
+    description: "Механизм раскладывания исправен, ткань без пятен, самовывоз.",
     keyInsight:
       "Для диванов сильнее всего цену меняют состояние обивки и исправность механизма.",
     fields: [
@@ -558,8 +555,7 @@ const cases: CaseItem[] = [
     category: "clothing",
     title: "Пуховик Uniqlo Ultra Light Down",
     marketPrice: 6500,
-    description:
-      "Размер M, без пятен и потертостей, после химчистки.",
+    description: "Размер M, без пятен и потертостей, после химчистки.",
     keyInsight:
       "У одежды вторичного рынка цену сильнее всего меняют бренд, сезонность и состояние ткани.",
     fields: [
@@ -613,8 +609,7 @@ const cases: CaseItem[] = [
     category: "sport",
     title: "Горный велосипед Trek Marlin 6",
     marketPrice: 58000,
-    description:
-      "Алюминиевая рама, гидравлика, пробег около двух сезонов.",
+    description: "Алюминиевая рама, гидравлика, пробег около двух сезонов.",
     keyInsight:
       "У велосипедов цену сильнее всего двигают уровень навески, материал рамы и состояние трансмиссии.",
     fields: [
@@ -632,8 +627,7 @@ const cases: CaseItem[] = [
     category: "sport",
     title: "Беговая дорожка для дома",
     marketPrice: 24000,
-    description:
-      "Складная, полотно без перекосов, скорость до 14 км/ч.",
+    description: "Складная, полотно без перекосов, скорость до 14 км/ч.",
     keyInsight:
       "Для тренажеров важнее всего мотор, состояние полотна и складной механизм.",
     fields: [
@@ -669,8 +663,7 @@ const cases: CaseItem[] = [
     category: "decor",
     title: "Напольная лампа IKEA",
     marketPrice: 3200,
-    description:
-      "Абажур целый, царапин почти нет, лампочка в комплекте.",
+    description: "Абажур целый, царапин почти нет, лампочка в комплекте.",
     keyInsight:
       "В декоре цена зависит от бренда, состояния и того, насколько модель массовая.",
     fields: [
@@ -800,8 +793,7 @@ const cases: CaseItem[] = [
     category: "plant",
     title: "Газонокосилка электрическая Bosch",
     marketPrice: 9200,
-    description:
-      "Ширина скашивания 34 см, нож меняли в прошлом сезоне.",
+    description: "Ширина скашивания 34 см, нож меняли в прошлом сезоне.",
     keyInsight:
       "У садовой техники цену двигают бренд, мощность и состояние ножа / мотора.",
     fields: [
@@ -819,8 +811,7 @@ const cases: CaseItem[] = [
     category: "bike",
     title: "Электросамокат Ninebot G30",
     marketPrice: 28500,
-    description:
-      "Пробег 1400 км, батарея держит нормально, есть зарядка.",
+    description: "Пробег 1400 км, батарея держит нормально, есть зарядка.",
     keyInsight:
       "У самокатов цену сильнее всего двигают пробег, батарея и модель мотора.",
     fields: [
@@ -838,8 +829,7 @@ const cases: CaseItem[] = [
     category: "decor",
     title: "Ковер шерстяной 160×230",
     marketPrice: 7600,
-    description:
-      "После химчистки, без сильного износа по краям.",
+    description: "После химчистки, без сильного износа по краям.",
     keyInsight:
       "У ковров цену больше всего двигают материал, размер и состояние ворса.",
     fields: [
@@ -875,8 +865,7 @@ const cases: CaseItem[] = [
     category: "appliance",
     title: "Увлажнитель воздуха Xiaomi",
     marketPrice: 4200,
-    description:
-      "Работает тихо, есть коробка, фильтр менялся недавно.",
+    description: "Работает тихо, есть коробка, фильтр менялся недавно.",
     keyInsight:
       "У небольших бытовых устройств цену сильнее всего держат бренд и состояние расходников.",
     fields: [
@@ -894,8 +883,7 @@ const cases: CaseItem[] = [
     category: "cookware",
     title: "Кофейный набор Villeroy & Boch",
     marketPrice: 4700,
-    description:
-      "6 чашек, 6 блюдец, без сколов, рисунок не стерт.",
+    description: "6 чашек, 6 блюдец, без сколов, рисунок не стерт.",
     keyInsight:
       "У брендовой посуды цену сильнее всего двигают комплектность и сохранность рисунка.",
     fields: [
@@ -1181,71 +1169,75 @@ const cases: CaseItem[] = [
 
 const getRichDescription = (item: CaseItem) => item.description;
 
+function ScreenShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-[100dvh] overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_24%),radial-gradient(circle_at_bottom,rgba(16,185,129,0.08),transparent_26%),#f8fafc] px-3 py-3">
+      <div className="mx-auto w-full max-w-[393px]">{children}</div>
+    </div>
+  );
+}
+
 function ListingVisual({ item }: { item: CaseItem }) {
   const visual = categoryVisuals[item.category];
   const Icon = visual.icon;
 
   return (
-    <div className="grid grid-cols-[1.35fr_0.95fr] gap-3">
+    <div className="grid grid-cols-[1.18fr_0.82fr] gap-2">
       <div
-        className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${visual.accent} p-4 text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)]`}
+        className={`relative overflow-hidden rounded-[24px] bg-gradient-to-br ${visual.accent} p-3 text-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]`}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.18),transparent_30%)]" />
-        <div className="relative flex h-[260px] flex-col justify-between">
-          <div className="inline-flex w-fit items-center rounded-full bg-white/18 px-3 py-1 text-xs font-medium backdrop-blur-sm">
+        <div className="relative flex h-[168px] flex-col justify-between">
+          <div className="inline-flex w-fit items-center rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
             {visual.tag}
           </div>
           <div className="flex items-center justify-center">
-            <div className="flex h-28 w-28 items-center justify-center rounded-[30px] bg-white/14 shadow-inner shadow-white/10 backdrop-blur-sm">
-              <Icon size={58} strokeWidth={1.75} />
+            <div className="flex h-20 w-20 items-center justify-center rounded-[24px] bg-white/14 shadow-inner shadow-white/10 backdrop-blur-sm">
+              <Icon size={42} strokeWidth={1.75} />
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-2xl bg-black/10 px-4 py-3 backdrop-blur-sm">
+          <div className="flex items-center justify-between rounded-2xl bg-black/10 px-3 py-2 backdrop-blur-sm">
             <div>
-              <div className="text-xs uppercase tracking-[0.18em] text-white/65">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-white/65">
                 Фото 1
               </div>
-              <div className="mt-1 text-sm font-semibold">Главный ракурс</div>
+              <div className="mt-1 text-xs font-semibold">Главный ракурс</div>
             </div>
-            <div className="rounded-full bg-white/15 px-3 py-1 text-xs">1/3</div>
+            <div className="rounded-full bg-white/15 px-2.5 py-1 text-[11px]">
+              1/3
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-rows-2 gap-3">
-        <div
-          className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${visual.accentSoft} p-3 shadow-[0_16px_30px_rgba(15,23,42,0.08)]`}
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),transparent_36%)]" />
-          <div className="relative flex h-full flex-col justify-between rounded-[22px] border border-white/70 bg-white/55 p-4 backdrop-blur-sm">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
-              Фото 2
-            </div>
-            <div className="flex items-center justify-center py-2">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
-                <Icon size={30} className="text-slate-700" strokeWidth={1.8} />
+      <div className="grid grid-rows-2 gap-2">
+        {["Фото 2", "Фото 3"].map((label, index) => (
+          <div
+            key={label}
+            className={`relative overflow-hidden rounded-[24px] bg-gradient-to-br ${visual.accentSoft} p-2 shadow-[0_12px_24px_rgba(15,23,42,0.07)]`}
+          >
+            <div
+              className={`absolute inset-0 ${
+                index === 0
+                  ? "bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),transparent_36%)]"
+                  : "bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.9),transparent_38%)]"
+              }`}
+            />
+            <div className="relative flex h-full flex-col justify-between rounded-[18px] border border-white/70 bg-white/55 p-3 backdrop-blur-sm">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
+                {label}
+              </div>
+              <div className="flex items-center justify-center py-1.5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                  <Icon size={24} className="text-slate-700" strokeWidth={1.8} />
+                </div>
+              </div>
+              <div className="text-xs font-medium text-slate-700">
+                {index === 0 ? "Деталь товара" : "Доп. снимок"}
               </div>
             </div>
-            <div className="text-sm font-medium text-slate-700">Деталь товара</div>
           </div>
-        </div>
-
-        <div
-          className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${visual.accentSoft} p-3 shadow-[0_16px_30px_rgba(15,23,42,0.08)]`}
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.9),transparent_38%)]" />
-          <div className="relative flex h-full flex-col justify-between rounded-[22px] border border-white/70 bg-white/55 p-4 backdrop-blur-sm">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
-              Фото 3
-            </div>
-            <div className="flex items-center justify-center py-2">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
-                <Icon size={30} className="text-slate-700" strokeWidth={1.8} />
-              </div>
-            </div>
-            <div className="text-sm font-medium text-slate-700">Доп. снимок</div>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -1266,26 +1258,26 @@ function GuessSlider({
   const progress = clamp(((safeValue - min) / range) * 100, 0, 100);
 
   return (
-    <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 px-6 py-5">
+    <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 px-4 py-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-slate-900">
             Сколько бы вы заплатили за б/у?
           </div>
-          <div className="mt-1 text-sm text-slate-500">
+          <div className="mt-1 text-xs leading-5 text-slate-500">
             Передвиньте ползунок и зафиксируйте свою оценку.
           </div>
         </div>
-        <span className="whitespace-nowrap rounded-full bg-white px-3 py-1 font-medium text-slate-700 shadow-sm">
+        <span className="whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-sm font-medium text-slate-700 shadow-sm">
           {formatPrice(safeValue)}
         </span>
       </div>
 
-      <div className="mt-6 -mx-2 px-2">
-        <div className="relative h-12">
-          <div className="absolute left-0 right-0 top-1/2 h-4 -translate-y-1/2 rounded-full bg-slate-200" />
+      <div className="mt-4 -mx-1 px-1">
+        <div className="relative h-10">
+          <div className="absolute left-0 right-0 top-1/2 h-3 -translate-y-1/2 rounded-full bg-slate-200" />
           <div
-            className="absolute left-0 top-1/2 h-4 -translate-y-1/2 rounded-full bg-gradient-to-r from-sky-500 via-blue-500 to-emerald-500"
+            className="absolute left-0 top-1/2 h-3 -translate-y-1/2 rounded-full bg-gradient-to-r from-sky-500 via-blue-500 to-emerald-500"
             style={{ width: `${progress}%` }}
           />
           <input
@@ -1295,12 +1287,12 @@ function GuessSlider({
             step={item.slider.step}
             value={safeValue}
             onChange={(e) => onChange(normalizeGuess(item, Number(e.target.value)))}
-            className="absolute inset-0 z-10 h-12 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-4 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:mt-[-12px] [&::-webkit-slider-thumb]:h-10 [&::-webkit-slider-thumb]:w-10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-slate-900 [&::-webkit-slider-thumb]:shadow-[0_10px_24px_rgba(15,23,42,0.22)] [&::-moz-range-track]:h-4 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:h-10 [&::-moz-range-thumb]:w-10 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-slate-900"
+            className="absolute inset-0 z-10 h-10 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-3 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:mt-[-13px] [&::-webkit-slider-thumb]:h-9 [&::-webkit-slider-thumb]:w-9 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-slate-900 [&::-webkit-slider-thumb]:shadow-[0_8px_20px_rgba(15,23,42,0.22)] [&::-moz-range-track]:h-3 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:h-9 [&::-moz-range-thumb]:w-9 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-slate-900"
           />
         </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+      <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
         <span>{formatPrice(min)}</span>
         <span>{formatPrice(max)}</span>
       </div>
@@ -1318,27 +1310,23 @@ function StartScreen({
   onSelectCategory: (next: SessionCategory) => void;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_28%),radial-gradient(circle_at_bottom,rgba(34,197,94,0.12),transparent_30%),#f8fafc] p-4">
-      <div className="w-full max-w-[430px] overflow-hidden rounded-[36px] border border-white/70 bg-white/90 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur-xl">
-        <div className="bg-gradient-to-r from-sky-500 via-blue-500 to-emerald-500 p-6 text-white">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur-sm">
-            <CircleDollarSign size={14} />
+    <ScreenShell>
+      <div className="overflow-hidden rounded-[30px] border border-white/70 bg-white/92 shadow-[0_24px_70px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+        <div className="bg-gradient-to-r from-sky-500 via-blue-500 to-emerald-500 p-5 text-white">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium backdrop-blur-sm">
+            <CircleDollarSign size={13} />
             Авито-inspired prototype
           </div>
-          <h1 className="mt-4 text-3xl font-bold leading-tight">Чувство цены</h1>
-          <p className="mt-3 text-sm leading-6 text-white/88">
-            На Авито выгодно покупать вещи с историей, если умеешь быстро
-            понимать рынок. Смотри на цену нового товара и оценивай, сколько
-            разумно стоит его б/у версия.
+          <h1 className="mt-3 text-[28px] font-bold leading-tight">Чувство цены</h1>
+          <p className="mt-2 text-sm leading-6 text-white/88">
+            Смотри на цену нового товара и оценивай, сколько разумно стоит его б/у версия.
           </p>
         </div>
 
-        <div className="space-y-4 p-6 text-slate-700">
+        <div className="space-y-3 p-4 text-slate-700">
           <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-            <div className="text-sm font-semibold text-slate-900">
-              Оценить свои знания в категории
-            </div>
-            <div className="mt-3 space-y-3">
+            <div className="text-sm font-semibold text-slate-900">Выберите категорию</div>
+            <div className="mt-3 space-y-2.5">
               {(
                 Object.entries(sessionCategoryMeta) as Array<[
                   SessionCategory,
@@ -1351,7 +1339,7 @@ function StartScreen({
                   <button
                     key={key}
                     onClick={() => onSelectCategory(key)}
-                    className={`w-full rounded-3xl border px-4 py-4 text-left transition ${
+                    className={`w-full rounded-3xl border px-3.5 py-3.5 text-left transition ${
                       isSelected
                         ? "border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/10"
                         : "border-slate-200 bg-white text-slate-900 hover:border-slate-300"
@@ -1364,14 +1352,14 @@ function StartScreen({
                         }`}
                       >
                         <Icon
-                          size={18}
+                          size={16}
                           className={isSelected ? "text-white" : "text-slate-700"}
                         />
                       </div>
                       <div>
                         <div className="font-semibold">{meta.title}</div>
                         <div
-                          className={`mt-1 text-sm ${
+                          className={`mt-1 text-xs leading-5 ${
                             isSelected ? "text-white/75" : "text-slate-500"
                           }`}
                         >
@@ -1385,37 +1373,37 @@ function StartScreen({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 text-center text-sm">
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-2xl font-bold text-slate-900">5</div>
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <div className="text-xl font-bold text-slate-900">5</div>
               <div className="mt-1 text-slate-500">карточек</div>
             </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-2xl font-bold text-slate-900">30с</div>
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <div className="text-xl font-bold text-slate-900">30с</div>
               <div className="mt-1 text-slate-500">на кейс</div>
             </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-2xl font-bold text-slate-900">+2</div>
-              <div className="mt-1 text-slate-500">примера выгоды</div>
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <div className="text-xl font-bold text-slate-900">+2</div>
+              <div className="mt-1 text-slate-500">выгоды</div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 text-sm leading-6 text-slate-600">
-            В каждой категории теперь больше карточек: 5 попадут в игру, а еще 2
-            неиспользованных товара покажут, что можно купить на сумму твоей выгоды.
+          <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 text-xs leading-5 text-slate-600">
+            5 товаров попадут в игру, а еще 2 неиспользованных товара покажут,
+            что можно купить на сумму вашей выгоды.
           </div>
 
           <button
             onClick={onStart}
             disabled={!selectedCategory}
-            className="flex w-full items-center justify-center gap-2 rounded-3xl bg-slate-900 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition enabled:hover:-translate-y-0.5 enabled:hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+            className="flex w-full items-center justify-center gap-2 rounded-3xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition enabled:hover:-translate-y-0.5 enabled:hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
           >
             Начать игру
-            <ChevronRight size={18} />
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>
-    </div>
+    </ScreenShell>
   );
 }
 
@@ -1446,75 +1434,78 @@ function FeedbackScreen({
         : "bg-rose-500";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_28%),#f8fafc] p-4">
-      <div className="w-full max-w-[430px] rounded-[36px] border border-white/70 bg-white/95 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.12)]">
-        <div className="flex items-center justify-between text-sm text-slate-400">
+    <ScreenShell>
+      <div className="rounded-[30px] border border-white/70 bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
+        <div className="flex items-center justify-between text-xs text-slate-400">
           <span>
             Карточка {round}/{total}
           </span>
           <span>Разбор</span>
         </div>
 
-        <div className={`mt-5 rounded-3xl border px-5 py-4 ${status.tone}`}>
-          <div className="text-[28px] font-extrabold tracking-tight">{status.title}</div>
-          <div className="mt-1 text-sm opacity-80">
+        <div className={`mt-3 rounded-3xl border px-4 py-3 ${status.tone}`}>
+          <div className="text-[24px] font-extrabold tracking-tight">{status.title}</div>
+          <div className="mt-1 text-xs leading-5 opacity-80">
             {result.timedOut
-              ? "Таймер закончился, поэтому показываем реальную цену б/у и сколько можно сэкономить по сравнению с новым товаром."
-              : "Сравните свою оценку с рыночной ценой б/у и посмотрите, насколько выгоднее покупка на Авито по сравнению с новым товаром."}
+              ? "Показываем реальную цену б/у и выгоду по сравнению с новым товаром."
+              : "Сравните свою оценку с рынком и посмотрите выгоду покупки на Авито."}
           </div>
         </div>
 
-        <h2 className="mt-5 text-2xl font-bold text-slate-900">{result.item.title}</h2>
+        <h2 className="mt-3 text-xl font-bold leading-tight text-slate-900">
+          {result.item.title}
+        </h2>
 
-        <div className="mt-6 grid gap-3">
-          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/80 p-5">
-            <div className="text-xl leading-8 text-emerald-900">
-              Выгоднее на <span className="font-bold">{formatPrice(savings.rubles)}</span>, чем новое за {formatPrice(savings.newPrice)}
-            </div>
-            <div className="mt-2 text-sm text-emerald-800">
-              Около {savings.percent}% экономии при покупке на Авито
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-white p-4 shadow-sm">
-                <div className="text-sm text-slate-500">Ваша оценка</div>
-                <div className={`mt-1 text-2xl font-bold ${priceTone}`}>
+        <div className="mt-3 grid gap-2.5">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-2.5">
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="rounded-2xl bg-white p-3 shadow-sm">
+                <div className="text-xs text-slate-500">Ваша оценка</div>
+                <div className={`mt-1 text-xl font-bold ${priceTone}`}>
                   {result.timedOut ? "—" : formatPrice(result.guess)}
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-white p-4 shadow-sm">
-                <div className="text-sm text-slate-500">Рыночная цена б/у</div>
-                <div className="mt-1 text-2xl font-bold text-slate-900">
+              <div className="rounded-2xl bg-white p-3 shadow-sm">
+                <div className="text-xs text-slate-500">Рыночная цена б/у</div>
+                <div className="mt-1 text-xl font-bold text-slate-900">
                   {formatPrice(result.item.marketPrice)}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-4">
-            <div className="flex items-center justify-between text-sm">
+          <div className="rounded-3xl border border-slate-200 bg-white p-3">
+            <div className="flex items-center justify-between text-xs">
               <span className="font-medium text-slate-700">Отклонение от рынка</span>
               <span className="font-semibold text-slate-900">
                 {result.timedOut ? "Тайм-аут" : `${deviationPercent}%`}
               </span>
             </div>
-            <div className="mt-3 h-3 rounded-full bg-slate-100">
+            <div className="mt-2 h-2.5 rounded-full bg-slate-100">
               <div
-                className={`h-3 rounded-full ${deviationTone}`}
+                className={`h-2.5 rounded-full ${deviationTone}`}
                 style={{ width: `${clamp(deviationPercent, 2, 100)}%` }}
               />
             </div>
-            <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+            <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-400">
               <span>0%</span>
               <span>100%</span>
             </div>
           </div>
+
+          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/80 p-4">
+            <div className="text-base leading-7 text-emerald-900">
+              Выгоднее на <span className="font-bold">{formatPrice(savings.rubles)}</span>,
+              чем новое за {formatPrice(savings.newPrice)}
+            </div>
+            <div className="mt-1.5 text-xs text-emerald-800">
+              Около {savings.percent}% экономии при покупке на Авито
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </ScreenShell>
   );
 }
 
@@ -1540,6 +1531,7 @@ function ResultScreen({
     totalSavings,
     selectedCategory,
     playedIds,
+    cases,
   );
   const best =
     answered.length > 0
@@ -1552,47 +1544,47 @@ function ResultScreen({
   const label = getAccuracyLabel(avgDeviation);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_24%),radial-gradient(circle_at_bottom,rgba(59,130,246,0.10),transparent_25%),#f8fafc] p-4">
-      <div className="w-full max-w-[430px] rounded-[36px] border border-white/70 bg-white/95 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.12)]">
-        <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">
-          <Trophy size={15} />
+    <ScreenShell>
+      <div className="rounded-[30px] border border-white/70 bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
+        <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+          <Trophy size={14} />
           Итоги сессии
         </div>
 
-        <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
+        <h2 className="mt-3 text-[26px] font-bold tracking-tight text-slate-900">
           {label.title}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-slate-600">
+        <p className="mt-2 text-xs leading-5 text-slate-600">
           {label.subtitle} Если видишь цену нового и быстро понимаешь честную
-          цену б/у, на Авито проще находить реально выгодные покупки.
+          цену б/у, на Авито проще находить выгодные покупки.
         </p>
         {selectedCategory && (
-          <div className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
+          <div className="mt-2 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
             Категория: {sessionCategoryMeta[selectedCategory].title}
           </div>
         )}
 
-        <div className="mt-6 grid gap-3">
-          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/80 p-5">
-            <div className="text-sm font-semibold uppercase tracking-[0.14em] text-emerald-700">
+        <div className="mt-4 grid gap-2.5">
+          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/80 p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
               Суммарная выгода
             </div>
-            <div className="mt-2 text-3xl font-bold tracking-tight text-emerald-900">
+            <div className="mt-1.5 text-[28px] font-bold tracking-tight text-emerald-900">
               {formatPrice(totalSavings)}
             </div>
-            <div className="mt-2 text-sm text-emerald-800">
+            <div className="mt-1 text-xs text-emerald-800">
               вы сэкономили, если бы купили это все на Авито
             </div>
             {affordableExamples.length > 0 && (
-              <div className="mt-4 rounded-2xl bg-white/80 p-4">
-                <div className="text-sm font-medium text-slate-900">
+              <div className="mt-3 rounded-2xl bg-white/85 p-3">
+                <div className="text-xs font-medium text-slate-900">
                   На эти деньги можно купить
                 </div>
-                <div className="mt-3 space-y-2">
+                <div className="mt-2 space-y-1.5">
                   {affordableExamples.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between rounded-2xl bg-white px-3 py-3 text-sm shadow-sm"
+                      className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-xs shadow-sm"
                     >
                       <div className="min-w-0 pr-3 font-medium text-slate-900">
                         {item.title}
@@ -1607,41 +1599,41 @@ function ResultScreen({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-3xl bg-slate-900 p-4 text-white">
-              <div className="text-sm text-white/70">Среднее отклонение</div>
-              <div className="mt-1 text-3xl font-bold">
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-3xl bg-slate-900 p-3 text-white">
+              <div className="text-xs text-white/70">Среднее отклонение</div>
+              <div className="mt-1 text-2xl font-bold">
                 {Math.round(avgDeviation * 100)}%
               </div>
             </div>
-            <div className="rounded-3xl bg-slate-50 p-4">
-              <div className="text-sm text-slate-500">Отвечено вовремя</div>
-              <div className="mt-1 text-3xl font-bold text-slate-900">
+            <div className="rounded-3xl bg-slate-50 p-3">
+              <div className="text-xs text-slate-500">Отвечено вовремя</div>
+              <div className="mt-1 text-2xl font-bold text-slate-900">
                 {answered.length}/{results.length}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-5 space-y-3">
-          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-4">
-            <div className="text-sm text-emerald-700">Лучшая попытка</div>
-            <div className="mt-1 font-semibold text-slate-900">
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-3">
+            <div className="text-xs text-emerald-700">Лучшая попытка</div>
+            <div className="mt-1 text-sm font-semibold text-slate-900">
               {best ? best.item.title : "—"}
             </div>
-            <div className="mt-1 text-sm text-slate-600">
+            <div className="mt-1 text-xs text-slate-600">
               {best
                 ? `${Math.round(best.deviation * 100)}% отклонения`
                 : "Нет ответа"}
             </div>
           </div>
 
-          <div className="rounded-3xl border border-rose-100 bg-rose-50/70 p-4">
-            <div className="text-sm text-rose-700">Самый сложный кейс</div>
-            <div className="mt-1 font-semibold text-slate-900">
+          <div className="rounded-3xl border border-rose-100 bg-rose-50/70 p-3">
+            <div className="text-xs text-rose-700">Самый сложный кейс</div>
+            <div className="mt-1 text-sm font-semibold text-slate-900">
               {worst ? worst.item.title : "—"}
             </div>
-            <div className="mt-1 text-sm text-slate-600">
+            <div className="mt-1 text-xs text-slate-600">
               {worst
                 ? `${Math.round(worst.deviation * 100)}% отклонения`
                 : "Нет данных"}
@@ -1649,25 +1641,25 @@ function ResultScreen({
           </div>
         </div>
 
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-          <div className="mb-3 text-sm font-semibold text-slate-700">
+        <div className="mt-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-3">
+          <div className="mb-2 text-xs font-semibold text-slate-700">
             Все 5 карточек
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {results.map((result, index) => (
               <div
                 key={result.item.id}
-                className="flex items-center justify-between rounded-2xl bg-white px-3 py-3 text-sm shadow-sm"
+                className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-xs shadow-sm"
               >
                 <div className="min-w-0 pr-3">
                   <div className="truncate font-medium text-slate-900">
                     {index + 1}. {result.item.title}
                   </div>
                   <div className="text-slate-500">
-                    Б/у: {formatPrice(result.item.marketPrice)} · Новое: {formatPrice(getNewPrice(result.item))}
+                    Б/у: {formatPrice(result.item.marketPrice)}
                   </div>
                 </div>
-                <div className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                <div className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
                   {result.timedOut
                     ? "Тайм-аут"
                     : `${Math.round(result.deviation * 100)}%`}
@@ -1679,13 +1671,13 @@ function ResultScreen({
 
         <button
           onClick={onRestart}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-3xl bg-slate-900 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-3xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
         >
-          <RotateCcw size={18} />
+          <RotateCcw size={16} />
           Сыграть еще раз
         </button>
       </div>
-    </div>
+    </ScreenShell>
   );
 }
 
@@ -1712,25 +1704,25 @@ function GameScreen({
   const timerProgress = clamp((timeLeft / CARD_TIME) * 100, 0, 100);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(16,185,129,0.08),transparent_24%),#f8fafc] px-4 py-5">
-      <div className="mx-auto max-w-[560px]">
-        <div className="mb-4 rounded-[28px] border border-white/70 bg-white/75 px-4 py-3 shadow-sm backdrop-blur-xl">
+    <ScreenShell>
+      <div className="rounded-[30px] border border-white/70 bg-white/90 p-3.5 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+        <div className="mb-3 rounded-[24px] border border-white/70 bg-white/80 px-3.5 py-3 shadow-sm backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+              <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">
                 Серия
               </div>
-              <div className="mt-1 text-xl font-bold text-slate-900">
+              <div className="mt-1 text-lg font-bold text-slate-900">
                 {roundIndex + 1} / {ROUND_LIMIT}
               </div>
             </div>
             <div className="text-right">
-              <div className="flex items-center justify-end gap-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
-                <TimerReset size={14} />
+              <div className="flex items-center justify-end gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">
+                <TimerReset size={13} />
                 Таймер
               </div>
               <div
-                className={`mt-1 text-xl font-bold ${
+                className={`mt-1 text-lg font-bold ${
                   timeLeft <= 7 ? "text-rose-500" : "text-slate-900"
                 }`}
               >
@@ -1738,7 +1730,7 @@ function GameScreen({
               </div>
             </div>
           </div>
-          <div className="mt-3 h-2 rounded-full bg-slate-100">
+          <div className="mt-2.5 h-2 rounded-full bg-slate-100">
             <div
               className={`h-2 rounded-full transition-all ${
                 timeLeft <= 7 ? "bg-rose-500" : "bg-slate-900"
@@ -1748,55 +1740,53 @@ function GameScreen({
           </div>
         </div>
 
-        <div className="rounded-[36px] border border-white/70 bg-white/88 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:p-5">
-          <ListingVisual item={item} />
+        <ListingVisual item={item} />
 
-          <div className="mt-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="min-w-0">
-              <div className="text-4xl font-bold tracking-tight text-slate-900">
-                {item.title}
-              </div>
+        <div className="mt-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="min-w-0">
+            <div className="text-[28px] font-bold leading-tight tracking-tight text-slate-900">
+              {item.title}
             </div>
+          </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {item.fields.map(([label, value]) => (
-                <div key={label} className="rounded-2xl bg-slate-50 p-3">
-                  <div className="text-xs text-slate-400">{label}</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-800">
-                    {value}
-                  </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {item.fields.map(([label, fieldValue]) => (
+              <div key={label} className="rounded-2xl bg-slate-50 p-2.5">
+                <div className="text-[11px] text-slate-400">{label}</div>
+                <div className="mt-1 text-xs font-semibold leading-5 text-slate-800">
+                  {fieldValue}
                 </div>
-              ))}
-            </div>
-
-            <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-              <div className="mb-1 font-semibold text-slate-900">Описание</div>
-              {getRichDescription(item)}
-            </div>
+              </div>
+            ))}
           </div>
 
-          <div className="mt-5 rounded-[28px] border border-slate-200 bg-slate-900 p-5 text-white shadow-sm">
-            <div className="text-xs uppercase tracking-[0.18em] text-white/60">
-              Цена нового
-            </div>
-            <div className="mt-2 text-4xl font-bold tracking-tight">
-              {formatPrice(savings.newPrice)}
-            </div>
+          <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+            <div className="mb-1 font-semibold text-slate-900">Описание</div>
+            {getRichDescription(item)}
           </div>
-
-          <div className="mt-5">
-            <GuessSlider item={item} value={guess} onChange={onGuessChange} />
-          </div>
-
-          <button
-            onClick={onSubmit}
-            className="mt-5 flex w-full items-center justify-center rounded-[28px] bg-slate-900 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
-          >
-            Зафиксировать цену
-          </button>
         </div>
+
+        <div className="mt-3 rounded-[24px] border border-slate-200 bg-slate-900 p-4 text-white shadow-sm">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-white/60">
+            Цена нового
+          </div>
+          <div className="mt-1.5 text-[30px] font-bold tracking-tight">
+            {formatPrice(savings.newPrice)}
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <GuessSlider item={item} value={guess} onChange={onGuessChange} />
+        </div>
+
+        <button
+          onClick={onSubmit}
+          className="mt-3 flex w-full items-center justify-center rounded-[24px] bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
+        >
+          Зафиксировать цену
+        </button>
       </div>
-    </div>
+    </ScreenShell>
   );
 }
 
@@ -1807,14 +1797,8 @@ function runSelfChecks() {
   );
   console.assert(clamp(10, 0, 5) === 5, "clamp upper bound failed");
   console.assert(clamp(-3, 0, 5) === 0, "clamp lower bound failed");
-  console.assert(
-    roundToStep(14550, 500) === 14500,
-    "roundToStep should snap to step",
-  );
-  console.assert(
-    getDeviation(100, 100) === 0,
-    "getDeviation exact match failed",
-  );
+  console.assert(roundToStep(14550, 500) === 14500, "roundToStep failed");
+  console.assert(getDeviation(100, 100) === 0, "getDeviation exact match failed");
   console.assert(
     Math.round(getDeviation(120, 100) * 100) === 20,
     "getDeviation percentage failed",
@@ -1853,8 +1837,9 @@ function runSelfChecks() {
     "Initial guess should not default to exact midpoint",
   );
   console.assert(
-    getAffordableExamples(30000, "electronics", new Set([1, 2, 3, 7, 8]))
-      .every((item) => !new Set([1, 2, 3, 7, 8]).has(item.id)),
+    getAffordableExamples(30000, "electronics", new Set([1, 2, 3, 7, 8]), cases).every(
+      (item) => !new Set([1, 2, 3, 7, 8]).has(item.id),
+    ),
     "Affordable examples must exclude played items",
   );
 }
@@ -1914,7 +1899,9 @@ export default function AvitoPriceSensePrototype() {
     timedOut = false,
   ) => {
     const fallbackGuess = getInitialGuess(item);
-    const finalGuess = timedOut ? fallbackGuess : normalizeGuess(item, selectedGuess);
+    const finalGuess = timedOut
+      ? fallbackGuess
+      : normalizeGuess(item, selectedGuess);
     const deviation = timedOut ? 1 : getDeviation(finalGuess, item.marketPrice);
 
     const result: GameResult = {

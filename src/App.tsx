@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Smartphone,
   Sofa,
@@ -20,6 +20,10 @@ import {
   TimerReset,
   Trophy,
   CircleDollarSign,
+  Sparkles,
+  Home,
+  Cpu,
+  Tag,
 } from "lucide-react";
 
 const ROUND_LIMIT = 5;
@@ -76,6 +80,31 @@ const getAccuracyLabel = (avgDeviation: number) => {
   };
 };
 
+const getRoundStatus = (deviation: number, timedOut = false) => {
+  if (timedOut) {
+    return {
+      title: "В следующий раз повезет!",
+      tone: "text-amber-700 bg-amber-50 border-amber-200",
+    };
+  }
+  if (deviation <= 0.08) {
+    return {
+      title: "СУПЕР",
+      tone: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    };
+  }
+  if (deviation <= 0.18) {
+    return {
+      title: "Почти!",
+      tone: "text-sky-700 bg-sky-50 border-sky-200",
+    };
+  }
+  return {
+    title: "В следующий раз повезет!",
+    tone: "text-rose-700 bg-rose-50 border-rose-200",
+  };
+};
+
 type CategoryKey =
   | "smartphone"
   | "furniture"
@@ -93,9 +122,12 @@ type CategoryKey =
   | "cooling"
   | "bike";
 
+type SessionCategory = "lifestyle" | "homeLiving" | "electronics";
+
 type CaseItem = {
   id: number;
   category: CategoryKey;
+  sessionCategory: SessionCategory;
   title: string;
   marketPrice: number;
   description: string;
@@ -106,6 +138,7 @@ type CaseItem = {
     max: number;
     step: number;
   };
+  newPriceFactor: number;
 };
 
 type GameResult = {
@@ -117,7 +150,16 @@ type GameResult = {
 
 const categoryVisuals: Record<
   CategoryKey,
-  { icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; accent: string; accentSoft: string; tag: string }
+  {
+    icon: React.ComponentType<{
+      size?: number;
+      strokeWidth?: number;
+      className?: string;
+    }>;
+    accent: string;
+    accentSoft: string;
+    tag: string;
+  }
 > = {
   smartphone: {
     icon: Smartphone,
@@ -211,306 +253,594 @@ const categoryVisuals: Record<
   },
 };
 
+const sessionCategoryMeta: Record<
+  SessionCategory,
+  {
+    title: string;
+    subtitle: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+  }
+> = {
+  lifestyle: {
+    title: "Лайвстайл",
+    subtitle: "Одежда, аксессуары, спорт и вещи для повседневной жизни",
+    icon: Sparkles,
+  },
+  homeLiving: {
+    title: "Home & Living",
+    subtitle: "Мебель, дом, кухня, интерьер и бытовые товары",
+    icon: Home,
+  },
+  electronics: {
+    title: "Электроника",
+    subtitle: "Смартфоны, гаджеты, техника, фото и консоли",
+    icon: Cpu,
+  },
+};
+
+const getNewPrice = (item: CaseItem) =>
+  roundToStep(item.marketPrice * item.newPriceFactor, item.slider.step);
+
 const cases: CaseItem[] = [
   {
     id: 1,
+    sessionCategory: "electronics",
     category: "smartphone",
     title: "iPhone 13, 128 ГБ",
     marketPrice: 47000,
     description: "Без ремонтов, Face ID работает, аккумулятор 88%, есть коробка.",
-    keyInsight: "Для смартфонов сильнее всего цену двигают состояние аккумулятора и факт ремонтов.",
-    fields: [["Состояние", "Хорошее"], ["Аккумулятор", "88%"], ["Память", "128 ГБ"], ["Комплект", "Коробка + кабель"]],
+    keyInsight:
+      "Для смартфонов сильнее всего цену двигают состояние аккумулятора и факт ремонтов.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Аккумулятор", "88%"],
+      ["Память", "128 ГБ"],
+      ["Комплект", "Коробка + кабель"],
+    ],
     slider: { min: 20000, max: 90000, step: 1000 },
+    newPriceFactor: 1.48,
   },
   {
     id: 2,
+    sessionCategory: "electronics",
     category: "smartphone",
     title: "Samsung Galaxy S23, 256 ГБ",
     marketPrice: 52000,
-    description: "Экран без выгорания, 2 eSIM, полный комплект, следов почти нет.",
-    keyInsight: "У флагманов Samsung хорошо держат цену объем памяти и состояние экрана.",
-    fields: [["Состояние", "Отличное"], ["Экран", "Без дефектов"], ["Память", "256 ГБ"], ["Комплект", "Полный"]],
+    description:
+      "Экран без выгорания, 2 eSIM, полный комплект, следов почти нет.",
+    keyInsight:
+      "У флагманов Samsung хорошо держат цену объем памяти и состояние экрана.",
+    fields: [
+      ["Состояние", "Отличное"],
+      ["Экран", "Без дефектов"],
+      ["Память", "256 ГБ"],
+      ["Комплект", "Полный"],
+    ],
     slider: { min: 20000, max: 100000, step: 1000 },
+    newPriceFactor: 1.45,
   },
   {
     id: 3,
+    sessionCategory: "electronics",
     category: "smartphone",
     title: "Xiaomi Redmi Note 12, 128 ГБ",
     marketPrice: 14500,
-    description: "Покупался год назад, батарея живая, в чехле с первого дня.",
-    keyInsight: "В среднем сегменте сильнее всего на цену влияет год покупки и общее состояние корпуса.",
-    fields: [["Состояние", "Очень хорошее"], ["Аккумулятор", "Хороший"], ["Память", "128 ГБ"], ["Комплект", "Чехол + коробка"]],
+    description:
+      "Покупался год назад, батарея живая, в чехле с первого дня.",
+    keyInsight:
+      "В среднем сегменте сильнее всего на цену влияет год покупки и общее состояние корпуса.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Аккумулятор", "Хороший"],
+      ["Память", "128 ГБ"],
+      ["Комплект", "Чехол + коробка"],
+    ],
     slider: { min: 5000, max: 40000, step: 500 },
+    newPriceFactor: 1.36,
   },
   {
     id: 4,
+    sessionCategory: "homeLiving",
     category: "furniture",
     title: "Диван-кровать 3-местный",
     marketPrice: 26000,
-    description: "Механизм раскладывания исправен, ткань без пятен, самовывоз.",
-    keyInsight: "Для диванов сильнее всего цену меняют состояние обивки и исправность механизма.",
-    fields: [["Состояние", "Очень хорошее"], ["Материал", "Рогожка"], ["Механизм", "Исправен"], ["Доставка", "Самовывоз"]],
+    description:
+      "Механизм раскладывания исправен, ткань без пятен, самовывоз.",
+    keyInsight:
+      "Для диванов сильнее всего цену меняют состояние обивки и исправность механизма.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Материал", "Рогожка"],
+      ["Механизм", "Исправен"],
+      ["Доставка", "Самовывоз"],
+    ],
     slider: { min: 5000, max: 70000, step: 1000 },
+    newPriceFactor: 1.85,
   },
   {
     id: 5,
+    sessionCategory: "homeLiving",
     category: "furniture",
     title: "Обеденный стол из массива",
     marketPrice: 18000,
-    description: "Размер 140×80, есть мелкие следы использования, стулья не входят.",
-    keyInsight: "Для столов цену двигают материал и размер, а не только внешний вид на фото.",
-    fields: [["Состояние", "Хорошее"], ["Материал", "Массив сосны"], ["Размер", "140×80"], ["Комплект", "Только стол"]],
+    description:
+      "Размер 140×80, есть мелкие следы использования, стулья не входят.",
+    keyInsight:
+      "Для столов цену двигают материал и размер, а не только внешний вид на фото.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Материал", "Массив сосны"],
+      ["Размер", "140×80"],
+      ["Комплект", "Только стол"],
+    ],
     slider: { min: 4000, max: 50000, step: 1000 },
+    newPriceFactor: 1.72,
   },
   {
     id: 6,
+    sessionCategory: "homeLiving",
     category: "furniture",
     title: "Компьютерное кресло ergonomic",
     marketPrice: 14500,
-    description: "Газлифт работает, сетка целая, подлокотники регулируются.",
-    keyInsight: "У кресел цена зависит от механизма качания, бренда и износа сиденья.",
-    fields: [["Состояние", "Хорошее"], ["Механизм", "Топ-ган"], ["Материал", "Сетка + ткань"], ["Регулировки", "Подлокотники / поясница"]],
+    description:
+      "Газлифт работает, сетка целая, подлокотники регулируются.",
+    keyInsight:
+      "У кресел цена зависит от механизма качания, бренда и износа сиденья.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Механизм", "Топ-ган"],
+      ["Материал", "Сетка + ткань"],
+      ["Регулировки", "Подлокотники / поясница"],
+    ],
     slider: { min: 3000, max: 40000, step: 500 },
+    newPriceFactor: 1.9,
   },
   {
     id: 7,
+    sessionCategory: "electronics",
     category: "appliance",
     title: "Микроволновка Samsung 23 л",
     marketPrice: 6800,
     description: "Работает тихо, внутри чистая, гриль отсутствует.",
-    keyInsight: "У микроволновок цену сильнее всего меняют литраж, бренд и набор режимов.",
-    fields: [["Состояние", "Хорошее"], ["Объем", "23 л"], ["Функции", "Базовые"], ["Мощность", "800 Вт"]],
+    keyInsight:
+      "У микроволновок цену сильнее всего меняют литраж, бренд и набор режимов.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Объем", "23 л"],
+      ["Функции", "Базовые"],
+      ["Мощность", "800 Вт"],
+    ],
     slider: { min: 1000, max: 15000, step: 200 },
+    newPriceFactor: 1.62,
   },
   {
     id: 8,
+    sessionCategory: "electronics",
     category: "appliance",
     title: "Пылесос Dyson V8",
     marketPrice: 21000,
-    description: "Аккумулятор заменен полгода назад, насадка для мебели в комплекте.",
-    keyInsight: "Для вертикальных пылесосов ключевые факторы цены — аккумулятор и комплект насадок.",
-    fields: [["Состояние", "Очень хорошее"], ["Тип", "Вертикальный"], ["Аккумулятор", "Заменен"], ["Комплект", "2 насадки"]],
+    description:
+      "Аккумулятор заменен полгода назад, насадка для мебели в комплекте.",
+    keyInsight:
+      "Для вертикальных пылесосов ключевые факторы цены — аккумулятор и комплект насадок.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Тип", "Вертикальный"],
+      ["Аккумулятор", "Заменен"],
+      ["Комплект", "2 насадки"],
+    ],
     slider: { min: 6000, max: 45000, step: 500 },
+    newPriceFactor: 1.78,
   },
   {
     id: 9,
+    sessionCategory: "electronics",
     category: "appliance",
     title: "Стиральная машина LG 6 кг",
     marketPrice: 17000,
-    description: "Без протечек, работает тихо, есть режим быстрой стирки.",
-    keyInsight: "Для крупной техники цену двигают возраст, бренд и общее техническое состояние.",
-    fields: [["Состояние", "Исправная"], ["Загрузка", "6 кг"], ["Инвертор", "Да"], ["Возраст", "4 года"]],
+    description:
+      "Без протечек, работает тихо, есть режим быстрой стирки.",
+    keyInsight:
+      "Для крупной техники цену двигают возраст, бренд и общее техническое состояние.",
+    fields: [
+      ["Состояние", "Исправная"],
+      ["Загрузка", "6 кг"],
+      ["Инвертор", "Да"],
+      ["Возраст", "4 года"],
+    ],
     slider: { min: 5000, max: 45000, step: 1000 },
+    newPriceFactor: 1.82,
   },
   {
     id: 10,
+    sessionCategory: "homeLiving",
     category: "cookware",
     title: "Набор кастрюль Tefal, 6 предметов",
     marketPrice: 5200,
     description: "Покрытие целое, крышки без сколов, пользовались мало.",
-    keyInsight: "У посуды на цену сильнее всего влияют бренд и состояние покрытия.",
-    fields: [["Состояние", "Очень хорошее"], ["Материал", "Нержавеющая сталь"], ["Комплект", "6 предметов"], ["Подходит", "Индукция"]],
+    keyInsight:
+      "У посуды на цену сильнее всего влияют бренд и состояние покрытия.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Материал", "Нержавеющая сталь"],
+      ["Комплект", "6 предметов"],
+      ["Подходит", "Индукция"],
+    ],
     slider: { min: 1000, max: 12000, step: 200 },
+    newPriceFactor: 1.7,
   },
   {
     id: 11,
+    sessionCategory: "homeLiving",
     category: "cookware",
     title: "Сервиз на 6 персон, фарфор",
     marketPrice: 3800,
     description: "Без сколов, почти не использовался, есть супница.",
-    keyInsight: "Для сервизов ключевые факторы — полнота набора и отсутствие сколов.",
-    fields: [["Состояние", "Отличное"], ["Материал", "Фарфор"], ["Комплект", "24 предмета"], ["Дефекты", "Нет"]],
+    keyInsight:
+      "Для сервизов ключевые факторы — полнота набора и отсутствие сколов.",
+    fields: [
+      ["Состояние", "Отличное"],
+      ["Материал", "Фарфор"],
+      ["Комплект", "24 предмета"],
+      ["Дефекты", "Нет"],
+    ],
     slider: { min: 800, max: 10000, step: 100 },
+    newPriceFactor: 1.95,
   },
   {
     id: 12,
+    sessionCategory: "lifestyle",
     category: "clothing",
     title: "Пуховик Uniqlo Ultra Light Down",
     marketPrice: 6500,
-    description: "Размер M, без пятен и потертостей, после химчистки.",
-    keyInsight: "У одежды вторичного рынка цену сильнее всего меняют бренд, сезонность и состояние ткани.",
-    fields: [["Состояние", "Отличное"], ["Размер", "M"], ["Сезон", "Демисезон"], ["Уход", "После химчистки"]],
+    description:
+      "Размер M, без пятен и потертостей, после химчистки.",
+    keyInsight:
+      "У одежды вторичного рынка цену сильнее всего меняют бренд, сезонность и состояние ткани.",
+    fields: [
+      ["Состояние", "Отличное"],
+      ["Размер", "M"],
+      ["Сезон", "Демисезон"],
+      ["Уход", "После химчистки"],
+    ],
     slider: { min: 1000, max: 18000, step: 200 },
+    newPriceFactor: 1.9,
   },
   {
     id: 13,
+    sessionCategory: "lifestyle",
     category: "clothing",
     title: "Кроссовки New Balance 574",
     marketPrice: 7200,
     description: "Размер 43, подошва живая, стельки оригинальные.",
-    keyInsight: "У кроссовок заметнее всего на цену влияют износ подошвы и сохранность пары.",
-    fields: [["Состояние", "Хорошее"], ["Размер", "43"], ["Материал", "Замша / текстиль"], ["Коробка", "Нет"]],
+    keyInsight:
+      "У кроссовок заметнее всего на цену влияют износ подошвы и сохранность пары.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Размер", "43"],
+      ["Материал", "Замша / текстиль"],
+      ["Коробка", "Нет"],
+    ],
     slider: { min: 1500, max: 18000, step: 200 },
+    newPriceFactor: 2.1,
   },
   {
     id: 14,
+    sessionCategory: "lifestyle",
     category: "clothing",
     title: "Пальто COS шерстяное",
     marketPrice: 9800,
     description: "Размер S, ткань без катышков, подкладка целая.",
-    keyInsight: "В верхней одежде на цену сильнее всего влияют состав ткани и состояние подкладки.",
-    fields: [["Состояние", "Очень хорошее"], ["Размер", "S"], ["Состав", "70% шерсть"], ["Сезон", "Осень / зима"]],
+    keyInsight:
+      "В верхней одежде на цену сильнее всего влияют состав ткани и состояние подкладки.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Размер", "S"],
+      ["Состав", "70% шерсть"],
+      ["Сезон", "Осень / зима"],
+    ],
     slider: { min: 2000, max: 25000, step: 500 },
+    newPriceFactor: 2.05,
   },
   {
     id: 15,
+    sessionCategory: "lifestyle",
     category: "sport",
     title: "Горный велосипед Trek Marlin 6",
     marketPrice: 58000,
-    description: "Алюминиевая рама, гидравлика, пробег около двух сезонов.",
-    keyInsight: "У велосипедов цену сильнее всего двигают уровень навески, материал рамы и состояние трансмиссии.",
-    fields: [["Состояние", "Хорошее"], ["Рама", "Алюминий"], ["Тормоза", "Гидравлические"], ["Колеса", "29"]],
+    description:
+      "Алюминиевая рама, гидравлика, пробег около двух сезонов.",
+    keyInsight:
+      "У велосипедов цену сильнее всего двигают уровень навески, материал рамы и состояние трансмиссии.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Рама", "Алюминий"],
+      ["Тормоза", "Гидравлические"],
+      ["Колеса", "29"],
+    ],
     slider: { min: 20000, max: 120000, step: 1000 },
+    newPriceFactor: 1.68,
   },
   {
     id: 16,
+    sessionCategory: "lifestyle",
     category: "sport",
     title: "Беговая дорожка для дома",
     marketPrice: 24000,
-    description: "Складная, полотно без перекосов, скорость до 14 км/ч.",
-    keyInsight: "Для тренажеров важнее всего мотор, состояние полотна и складной механизм.",
-    fields: [["Состояние", "Исправная"], ["Тип", "Складная"], ["Мотор", "2 л.с."], ["Макс. скорость", "14 км/ч"]],
+    description:
+      "Складная, полотно без перекосов, скорость до 14 км/ч.",
+    keyInsight:
+      "Для тренажеров важнее всего мотор, состояние полотна и складной механизм.",
+    fields: [
+      ["Состояние", "Исправная"],
+      ["Тип", "Складная"],
+      ["Мотор", "2 л.с."],
+      ["Макс. скорость", "14 км/ч"],
+    ],
     slider: { min: 8000, max: 65000, step: 1000 },
+    newPriceFactor: 1.75,
   },
   {
     id: 17,
+    sessionCategory: "lifestyle",
     category: "sport",
     title: "Набор гантелей разборных 2×20 кг",
     marketPrice: 5600,
     description: "Диски без сколов, грифы с замками, хранились дома.",
-    keyInsight: "У силового инвентаря цену в основном двигают общий вес и материал дисков.",
-    fields: [["Состояние", "Хорошее"], ["Вес", "40 кг"], ["Материал", "Чугун"], ["Комплект", "Грифы + замки"]],
+    keyInsight:
+      "У силового инвентаря цену в основном двигают общий вес и материал дисков.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Вес", "40 кг"],
+      ["Материал", "Чугун"],
+      ["Комплект", "Грифы + замки"],
+    ],
     slider: { min: 1500, max: 12000, step: 200 },
+    newPriceFactor: 1.6,
   },
   {
     id: 18,
+    sessionCategory: "homeLiving",
     category: "decor",
     title: "Напольная лампа IKEA",
     marketPrice: 3200,
-    description: "Абажур целый, царапин почти нет, лампочка в комплекте.",
-    keyInsight: "В декоре цена зависит от бренда, состояния и того, насколько модель массовая.",
-    fields: [["Состояние", "Очень хорошее"], ["Материал", "Металл / ткань"], ["Высота", "150 см"], ["Комплект", "С лампочкой"]],
+    description:
+      "Абажур целый, царапин почти нет, лампочка в комплекте.",
+    keyInsight:
+      "В декоре цена зависит от бренда, состояния и того, насколько модель массовая.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Материал", "Металл / ткань"],
+      ["Высота", "150 см"],
+      ["Комплект", "С лампочкой"],
+    ],
     slider: { min: 700, max: 9000, step: 100 },
+    newPriceFactor: 1.85,
   },
   {
     id: 19,
+    sessionCategory: "electronics",
     category: "gadget",
     title: "AirPods Pro 2",
     marketPrice: 13500,
-    description: "Оригинал, шумодав работает, кейс с небольшими потертостями.",
-    keyInsight: "У наушников основная цена сидит в оригинальности, поколении и состоянии кейса / батареи.",
-    fields: [["Состояние", "Хорошее"], ["Шумодав", "Работает"], ["Кейс", "Есть потертости"], ["Комплект", "Кабель + амбушюры"]],
+    description:
+      "Оригинал, шумодав работает, кейс с небольшими потертостями.",
+    keyInsight:
+      "У наушников основная цена сидит в оригинальности, поколении и состоянии кейса / батареи.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Шумодав", "Работает"],
+      ["Кейс", "Есть потертости"],
+      ["Комплект", "Кабель + амбушюры"],
+    ],
     slider: { min: 4000, max: 25000, step: 500 },
+    newPriceFactor: 1.58,
   },
   {
     id: 20,
+    sessionCategory: "lifestyle",
     category: "watch",
     title: "Apple Watch SE 44 мм",
     marketPrice: 15500,
-    description: "Аккумулятор 91%, ремешок новый, экран без глубоких царапин.",
-    keyInsight: "У смарт-часов цену сильнее всего двигают поколение устройства и остаток батареи.",
-    fields: [["Состояние", "Хорошее"], ["Размер", "44 мм"], ["Аккумулятор", "91%"], ["Ремешок", "Новый"]],
+    description:
+      "Аккумулятор 91%, ремешок новый, экран без глубоких царапин.",
+    keyInsight:
+      "У смарт-часов цену сильнее всего двигают поколение устройства и остаток батареи.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Размер", "44 мм"],
+      ["Аккумулятор", "91%"],
+      ["Ремешок", "Новый"],
+    ],
     slider: { min: 5000, max: 30000, step: 500 },
+    newPriceFactor: 1.65,
   },
   {
     id: 21,
+    sessionCategory: "electronics",
     category: "camera",
     title: "Canon EOS 200D + 18-55",
     marketPrice: 33000,
-    description: "Пробег около 18 тысяч кадров, матрица чистая, ремень и зарядка есть.",
-    keyInsight: "У камер сильнее всего на цену влияют пробег затвора и объектив в комплекте.",
-    fields: [["Состояние", "Очень хорошее"], ["Пробег", "18 тыс. кадров"], ["Комплект", "Китовый объектив"], ["Матрица", "Чистая"]],
+    description:
+      "Пробег около 18 тысяч кадров, матрица чистая, ремень и зарядка есть.",
+    keyInsight:
+      "У камер сильнее всего на цену влияют пробег затвора и объектив в комплекте.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Пробег", "18 тыс. кадров"],
+      ["Комплект", "Китовый объектив"],
+      ["Матрица", "Чистая"],
+    ],
     slider: { min: 12000, max: 70000, step: 1000 },
+    newPriceFactor: 1.7,
   },
   {
     id: 22,
+    sessionCategory: "homeLiving",
     category: "cooling",
     title: "Мобильный кондиционер Electrolux",
     marketPrice: 23000,
     description: "Охлаждает до 20 м², шланг и пульт в комплекте.",
-    keyInsight: "У климатической техники цену сильнее всего двигают мощность и сезонность спроса.",
-    fields: [["Состояние", "Исправный"], ["Мощность", "2.6 кВт"], ["Площадь", "До 20 м²"], ["Комплект", "Шланг + пульт"]],
+    keyInsight:
+      "У климатической техники цену сильнее всего двигают мощность и сезонность спроса.",
+    fields: [
+      ["Состояние", "Исправный"],
+      ["Мощность", "2.6 кВт"],
+      ["Площадь", "До 20 м²"],
+      ["Комплект", "Шланг + пульт"],
+    ],
     slider: { min: 8000, max: 45000, step: 1000 },
+    newPriceFactor: 1.72,
   },
   {
     id: 23,
+    sessionCategory: "electronics",
     category: "gaming",
     title: "PlayStation 5 Slim",
     marketPrice: 43000,
     description: "1 геймпад, коробка есть, без аккаунтов и подписок.",
-    keyInsight: "У консолей цену сильнее всего определяют ревизия, состояние и комплект с геймпадами.",
-    fields: [["Состояние", "Отличное"], ["Ревизия", "Slim"], ["Комплект", "1 геймпад"], ["Память", "825 ГБ"]],
+    keyInsight:
+      "У консолей цену сильнее всего определяют ревизия, состояние и комплект с геймпадами.",
+    fields: [
+      ["Состояние", "Отличное"],
+      ["Ревизия", "Slim"],
+      ["Комплект", "1 геймпад"],
+      ["Память", "825 ГБ"],
+    ],
     slider: { min: 20000, max: 70000, step: 1000 },
+    newPriceFactor: 1.38,
   },
   {
     id: 24,
+    sessionCategory: "homeLiving",
     category: "coffee",
     title: "Кофемашина DeLonghi Magnifica",
     marketPrice: 22000,
-    description: "После обслуживания, капучинатор работает, есть накипь на поддоне.",
-    keyInsight: "Для кофемашин сильнее всего на цену влияют пробег, обслуживание и исправность капучинатора.",
-    fields: [["Состояние", "Хорошее"], ["Тип", "Автоматическая"], ["Обслуживание", "Сделано"], ["Капучинатор", "Работает"]],
+    description:
+      "После обслуживания, капучинатор работает, есть накипь на поддоне.",
+    keyInsight:
+      "Для кофемашин сильнее всего на цену влияют пробег, обслуживание и исправность капучинатора.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Тип", "Автоматическая"],
+      ["Обслуживание", "Сделано"],
+      ["Капучинатор", "Работает"],
+    ],
     slider: { min: 8000, max: 50000, step: 1000 },
+    newPriceFactor: 1.92,
   },
   {
     id: 25,
+    sessionCategory: "homeLiving",
     category: "plant",
     title: "Газонокосилка электрическая Bosch",
     marketPrice: 9200,
-    description: "Ширина скашивания 34 см, нож меняли в прошлом сезоне.",
-    keyInsight: "У садовой техники цену двигают бренд, мощность и состояние ножа / мотора.",
-    fields: [["Состояние", "Исправная"], ["Тип", "Электрическая"], ["Мощность", "1300 Вт"], ["Нож", "Меняли"]],
+    description:
+      "Ширина скашивания 34 см, нож меняли в прошлом сезоне.",
+    keyInsight:
+      "У садовой техники цену двигают бренд, мощность и состояние ножа / мотора.",
+    fields: [
+      ["Состояние", "Исправная"],
+      ["Тип", "Электрическая"],
+      ["Мощность", "1300 Вт"],
+      ["Нож", "Меняли"],
+    ],
     slider: { min: 2500, max: 20000, step: 500 },
+    newPriceFactor: 1.78,
   },
   {
     id: 26,
+    sessionCategory: "electronics",
     category: "bike",
     title: "Электросамокат Ninebot G30",
     marketPrice: 28500,
-    description: "Пробег 1400 км, батарея держит нормально, есть зарядка.",
-    keyInsight: "У самокатов цену сильнее всего двигают пробег, батарея и модель мотора.",
-    fields: [["Состояние", "Хорошее"], ["Пробег", "1400 км"], ["Аккумулятор", "Держит нормально"], ["Комплект", "Зарядка"]],
+    description:
+      "Пробег 1400 км, батарея держит нормально, есть зарядка.",
+    keyInsight:
+      "У самокатов цену сильнее всего двигают пробег, батарея и модель мотора.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Пробег", "1400 км"],
+      ["Аккумулятор", "Держит нормально"],
+      ["Комплект", "Зарядка"],
+    ],
     slider: { min: 10000, max: 60000, step: 1000 },
+    newPriceFactor: 1.62,
   },
   {
     id: 27,
+    sessionCategory: "homeLiving",
     category: "decor",
     title: "Ковер шерстяной 160×230",
     marketPrice: 7600,
-    description: "После химчистки, без сильного износа по краям.",
-    keyInsight: "У ковров цену больше всего двигают материал, размер и состояние ворса.",
-    fields: [["Состояние", "Очень хорошее"], ["Материал", "Шерсть"], ["Размер", "160×230"], ["Уход", "После химчистки"]],
+    description:
+      "После химчистки, без сильного износа по краям.",
+    keyInsight:
+      "У ковров цену больше всего двигают материал, размер и состояние ворса.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["Материал", "Шерсть"],
+      ["Размер", "160×230"],
+      ["Уход", "После химчистки"],
+    ],
     slider: { min: 1500, max: 18000, step: 200 },
+    newPriceFactor: 1.88,
   },
   {
     id: 28,
+    sessionCategory: "electronics",
     category: "gadget",
     title: "Робот-пылесос Xiaomi S10",
     marketPrice: 13800,
     description: "База есть, щетки новые, аккумулятор родной.",
-    keyInsight: "У роботов-пылесосов цену сильнее всего меняют состояние аккумулятора и наличие базы.",
-    fields: [["Состояние", "Очень хорошее"], ["База", "Есть"], ["Щетки", "Новые"], ["Аккумулятор", "Родной"]],
+    keyInsight:
+      "У роботов-пылесосов цену сильнее всего меняют состояние аккумулятора и наличие базы.",
+    fields: [
+      ["Состояние", "Очень хорошее"],
+      ["База", "Есть"],
+      ["Щетки", "Новые"],
+      ["Аккумулятор", "Родной"],
+    ],
     slider: { min: 5000, max: 30000, step: 500 },
+    newPriceFactor: 1.7,
   },
   {
     id: 29,
+    sessionCategory: "homeLiving",
     category: "appliance",
     title: "Увлажнитель воздуха Xiaomi",
     marketPrice: 4200,
-    description: "Работает тихо, есть коробка, фильтр менялся недавно.",
-    keyInsight: "У небольших бытовых устройств цену сильнее всего держат бренд и состояние расходников.",
-    fields: [["Состояние", "Хорошее"], ["Объем", "4.5 л"], ["Фильтр", "Меняли недавно"], ["Комплект", "Коробка"]],
+    description:
+      "Работает тихо, есть коробка, фильтр менялся недавно.",
+    keyInsight:
+      "У небольших бытовых устройств цену сильнее всего держат бренд и состояние расходников.",
+    fields: [
+      ["Состояние", "Хорошее"],
+      ["Объем", "4.5 л"],
+      ["Фильтр", "Меняли недавно"],
+      ["Комплект", "Коробка"],
+    ],
     slider: { min: 1000, max: 9000, step: 100 },
+    newPriceFactor: 1.64,
   },
   {
     id: 30,
+    sessionCategory: "homeLiving",
     category: "cookware",
     title: "Кофейный набор Villeroy & Boch",
     marketPrice: 4700,
-    description: "6 чашек, 6 блюдец, без сколов, рисунок не стерт.",
-    keyInsight: "У брендовой посуды цену сильнее всего двигают комплектность и сохранность рисунка.",
-    fields: [["Состояние", "Отличное"], ["Комплект", "12 предметов"], ["Материал", "Фарфор"], ["Дефекты", "Нет"]],
+    description:
+      "6 чашек, 6 блюдец, без сколов, рисунок не стерт.",
+    keyInsight:
+      "У брендовой посуды цену сильнее всего двигают комплектность и сохранность рисунка.",
+    fields: [
+      ["Состояние", "Отличное"],
+      ["Комплект", "12 предметов"],
+      ["Материал", "Фарфор"],
+      ["Дефекты", "Нет"],
+    ],
     slider: { min: 1000, max: 10000, step: 100 },
+    newPriceFactor: 2.1,
   },
 ];
 
@@ -547,7 +877,8 @@ const richDescriptions: Record<number, string> = {
   30: "Стоял в серванте и доставался редко, продают после обновления интерьера. Важны цельность набора и аккуратный вид; без реальной редкости рынок не прощает завышение.",
 };
 
-const getRichDescription = (item: CaseItem) => richDescriptions[item.id] || item.description;
+const getRichDescription = (item: CaseItem) =>
+  richDescriptions[item.id] || item.description;
 
 function ListingVisual({ item }: { item: CaseItem }) {
   const visual = categoryVisuals[item.category];
@@ -555,7 +886,9 @@ function ListingVisual({ item }: { item: CaseItem }) {
 
   return (
     <div className="grid grid-cols-[1.35fr_0.95fr] gap-3">
-      <div className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${visual.accent} p-4 text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)]`}>
+      <div
+        className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${visual.accent} p-4 text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)]`}
+      >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.18),transparent_30%)]" />
         <div className="relative flex h-[260px] flex-col justify-between">
           <div className="inline-flex w-fit items-center rounded-full bg-white/18 px-3 py-1 text-xs font-medium backdrop-blur-sm">
@@ -568,7 +901,9 @@ function ListingVisual({ item }: { item: CaseItem }) {
           </div>
           <div className="flex items-center justify-between rounded-2xl bg-black/10 px-4 py-3 backdrop-blur-sm">
             <div>
-              <div className="text-xs uppercase tracking-[0.18em] text-white/65">Фото 1</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-white/65">
+                Фото 1
+              </div>
               <div className="mt-1 text-sm font-semibold">Главный ракурс</div>
             </div>
             <div className="rounded-full bg-white/15 px-3 py-1 text-xs">1/3</div>
@@ -577,10 +912,14 @@ function ListingVisual({ item }: { item: CaseItem }) {
       </div>
 
       <div className="grid grid-rows-2 gap-3">
-        <div className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${visual.accentSoft} p-3 shadow-[0_16px_30px_rgba(15,23,42,0.08)]`}>
+        <div
+          className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${visual.accentSoft} p-3 shadow-[0_16px_30px_rgba(15,23,42,0.08)]`}
+        >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),transparent_36%)]" />
           <div className="relative flex h-full flex-col justify-between rounded-[22px] border border-white/70 bg-white/55 p-4 backdrop-blur-sm">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Фото 2</div>
+            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
+              Фото 2
+            </div>
             <div className="flex items-center justify-center py-2">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
                 <Icon size={30} className="text-slate-700" strokeWidth={1.8} />
@@ -590,10 +929,14 @@ function ListingVisual({ item }: { item: CaseItem }) {
           </div>
         </div>
 
-        <div className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${visual.accentSoft} p-3 shadow-[0_16px_30px_rgba(15,23,42,0.08)]`}>
+        <div
+          className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${visual.accentSoft} p-3 shadow-[0_16px_30px_rgba(15,23,42,0.08)]`}
+        >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.9),transparent_38%)]" />
           <div className="relative flex h-full flex-col justify-between rounded-[22px] border border-white/70 bg-white/55 p-4 backdrop-blur-sm">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Фото 3</div>
+            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
+              Фото 3
+            </div>
             <div className="flex items-center justify-center py-2">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
                 <Icon size={30} className="text-slate-700" strokeWidth={1.8} />
@@ -607,14 +950,25 @@ function ListingVisual({ item }: { item: CaseItem }) {
   );
 }
 
-function GuessSlider({ item, value, onChange }: { item: CaseItem; value: number; onChange: (next: number) => void }) {
-  const progress = ((value - item.slider.min) / (item.slider.max - item.slider.min)) * 100;
+function GuessSlider({
+  item,
+  value,
+  onChange,
+}: {
+  item: CaseItem;
+  value: number;
+  onChange: (next: number) => void;
+}) {
+  const progress =
+    ((value - item.slider.min) / (item.slider.max - item.slider.min)) * 100;
 
   return (
     <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
       <div className="flex items-center justify-between gap-3 text-sm text-slate-500">
         <span>Ваша оценка</span>
-        <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700 shadow-sm">{formatPrice(value)}</span>
+        <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700 shadow-sm">
+          {formatPrice(value)}
+        </span>
       </div>
 
       <div className="mt-5">
@@ -644,7 +998,15 @@ function GuessSlider({ item, value, onChange }: { item: CaseItem; value: number;
   );
 }
 
-function StartScreen({ onStart }: { onStart: () => void }) {
+function StartScreen({
+  onStart,
+  selectedCategory,
+  onSelectCategory,
+}: {
+  onStart: () => void;
+  selectedCategory: SessionCategory | null;
+  onSelectCategory: (next: SessionCategory) => void;
+}) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_28%),radial-gradient(circle_at_bottom,rgba(34,197,94,0.12),transparent_30%),#f8fafc] p-4">
       <div className="w-full max-w-[430px] overflow-hidden rounded-[36px] border border-white/70 bg-white/90 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur-xl">
@@ -655,11 +1017,51 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           </div>
           <h1 className="mt-4 text-3xl font-bold leading-tight">Чувство цены</h1>
           <p className="mt-3 text-sm leading-6 text-white/88">
-            Оцените рыночную цену товара без прямой подсказки. На каждую карточку — 30 секунд, в сессии — 5 кейсов.
+            Оцените, насколько хорошо вы чувствуете рынок в знакомой категории. Внутри сессии будут только похожие товары.
           </p>
         </div>
 
         <div className="space-y-4 p-6 text-slate-700">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="text-sm font-semibold text-slate-900">
+              Оценить свои знания в категории
+            </div>
+            <div className="mt-3 space-y-3">
+              {(
+                Object.entries(sessionCategoryMeta) as Array<[
+                  SessionCategory,
+                  (typeof sessionCategoryMeta)[SessionCategory],
+                ]>
+              ).map(([key, meta]) => {
+                const Icon = meta.icon;
+                const isSelected = selectedCategory === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => onSelectCategory(key)}
+                    className={`w-full rounded-3xl border px-4 py-4 text-left transition ${
+                      isSelected
+                        ? "border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/10"
+                        : "border-slate-200 bg-white text-slate-900 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`rounded-2xl p-2 ${isSelected ? "bg-white/12" : "bg-slate-100"}`}>
+                        <Icon size={18} className={isSelected ? "text-white" : "text-slate-700"} />
+                      </div>
+                      <div>
+                        <div className="font-semibold">{meta.title}</div>
+                        <div className={`mt-1 text-sm ${isSelected ? "text-white/75" : "text-slate-500"}`}>
+                          {meta.subtitle}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-3 text-center text-sm">
             <div className="rounded-2xl bg-slate-50 p-4">
               <div className="text-2xl font-bold text-slate-900">5</div>
@@ -670,18 +1072,19 @@ function StartScreen({ onStart }: { onStart: () => void }) {
               <div className="mt-1 text-slate-500">на кейс</div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-2xl font-bold text-slate-900">30</div>
-              <div className="mt-1 text-slate-500">лотов в базе</div>
+              <div className="text-2xl font-bold text-slate-900">1</div>
+              <div className="mt-1 text-slate-500">подсказка</div>
             </div>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 text-sm leading-6 text-slate-600">
-            После каждого ответа вы увидите реальную цену, свое отклонение и короткую подсказку, какая характеристика сильнее всего влияет на стоимость.
+            Один раз за сессию можно посмотреть цену такого же товара новым — это даст ориентир, но не точную рыночную цену б/у лота.
           </div>
 
           <button
             onClick={onStart}
-            className="flex w-full items-center justify-center gap-2 rounded-3xl bg-slate-900 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
+            disabled={!selectedCategory}
+            className="flex w-full items-center justify-center gap-2 rounded-3xl bg-slate-900 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition enabled:hover:-translate-y-0.5 enabled:hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
           >
             Начать игру
             <ChevronRight size={18} />
@@ -692,55 +1095,68 @@ function StartScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
-function FeedbackScreen({ result, round, total }: { result: GameResult; round: number; total: number }) {
+function FeedbackScreen({
+  result,
+  round,
+  total,
+}: {
+  result: GameResult;
+  round: number;
+  total: number;
+}) {
   const deviationPercent = Math.round(result.deviation * 100);
-  const statusColor = result.timedOut
-    ? "text-amber-600 bg-amber-50 border-amber-200"
-    : deviationPercent <= 8
-      ? "text-emerald-600 bg-emerald-50 border-emerald-200"
-      : deviationPercent <= 18
-        ? "text-sky-600 bg-sky-50 border-sky-200"
-        : "text-rose-600 bg-rose-50 border-rose-200";
-
-  const title = result.timedOut
-    ? "Время вышло"
-    : deviationPercent <= 8
-      ? "Очень близко"
-      : deviationPercent <= 18
-        ? "Неплохо"
-        : "Можно точнее";
+  const status = getRoundStatus(result.deviation, result.timedOut);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_28%),#f8fafc] p-4">
       <div className="w-full max-w-[430px] rounded-[36px] border border-white/70 bg-white/95 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.12)]">
         <div className="flex items-center justify-between text-sm text-slate-400">
-          <span>Карточка {round}/{total}</span>
+          <span>
+            Карточка {round}/{total}
+          </span>
           <span>Разбор</span>
         </div>
 
-        <div className={`mt-4 inline-flex rounded-full border px-4 py-2 text-sm font-medium ${statusColor}`}>
-          {title}
+        <div className={`mt-5 rounded-3xl border px-5 py-4 ${status.tone}`}>
+          <div className="text-[28px] font-extrabold tracking-tight">{status.title}</div>
+          <div className="mt-1 text-sm opacity-80">
+            {result.timedOut
+              ? "Таймер закончился, поэтому показали ориентир по этому лоту."
+              : "Сравните свою оценку с рыночной ценой и посмотрите, что сильнее всего двигает стоимость."}
+          </div>
         </div>
 
-        <h2 className="mt-4 text-2xl font-bold text-slate-900">{result.item.title}</h2>
+        <h2 className="mt-5 text-2xl font-bold text-slate-900">{result.item.title}</h2>
 
         <div className="mt-6 grid gap-3">
           <div className="rounded-3xl bg-slate-50 p-4">
             <div className="text-sm text-slate-500">Ваша оценка</div>
-            <div className="mt-1 text-2xl font-bold text-slate-900">{result.timedOut ? "—" : formatPrice(result.guess)}</div>
+            <div className="mt-1 text-2xl font-bold text-slate-900">
+              {result.timedOut ? "—" : formatPrice(result.guess)}
+            </div>
           </div>
 
           <div className="rounded-3xl bg-slate-900 p-4 text-white">
             <div className="text-sm text-white/70">Рыночная цена</div>
-            <div className="mt-1 text-2xl font-bold">{formatPrice(result.item.marketPrice)}</div>
+            <div className="mt-1 text-2xl font-bold">
+              {formatPrice(result.item.marketPrice)}
+            </div>
           </div>
 
           <div className="rounded-3xl border border-slate-200 p-4">
             <div className="text-sm text-slate-500">Отклонение</div>
-            <div className="mt-1 text-2xl font-bold text-slate-900">{deviationPercent}%</div>
+            <div className="mt-1 text-2xl font-bold text-slate-900">
+              {deviationPercent}%
+            </div>
             <div className="mt-2 h-2 rounded-full bg-slate-100">
               <div
-                className={`h-2 rounded-full ${deviationPercent <= 8 ? "bg-emerald-500" : deviationPercent <= 18 ? "bg-sky-500" : "bg-rose-500"}`}
+                className={`h-2 rounded-full ${
+                  deviationPercent <= 8
+                    ? "bg-emerald-500"
+                    : deviationPercent <= 18
+                      ? "bg-sky-500"
+                      : "bg-rose-500"
+                }`}
                 style={{ width: `${clamp(deviationPercent, 2, 100)}%` }}
               />
             </div>
@@ -748,7 +1164,9 @@ function FeedbackScreen({ result, round, total }: { result: GameResult; round: n
         </div>
 
         <div className="mt-5 rounded-3xl border border-sky-100 bg-sky-50/70 p-4 text-sm leading-6 text-slate-700">
-          <div className="mb-1 font-semibold text-slate-900">На что стоило обратить внимание</div>
+          <div className="mb-1 font-semibold text-slate-900">
+            На что стоило обратить внимание
+          </div>
           {result.item.keyInsight}
         </div>
       </div>
@@ -756,11 +1174,27 @@ function FeedbackScreen({ result, round, total }: { result: GameResult; round: n
   );
 }
 
-function ResultScreen({ results, onRestart }: { results: GameResult[]; onRestart: () => void }) {
+function ResultScreen({
+  results,
+  onRestart,
+  selectedCategory,
+}: {
+  results: GameResult[];
+  onRestart: () => void;
+  selectedCategory: SessionCategory | null;
+}) {
   const answered = results.filter((item) => !item.timedOut);
-  const avgDeviation = results.reduce((sum, item) => sum + item.deviation, 0) / Math.max(results.length, 1);
-  const best = answered.length > 0 ? [...answered].sort((a, b) => a.deviation - b.deviation)[0] : null;
-  const worst = results.length > 0 ? [...results].sort((a, b) => b.deviation - a.deviation)[0] : null;
+  const avgDeviation =
+    results.reduce((sum, item) => sum + item.deviation, 0) /
+    Math.max(results.length, 1);
+  const best =
+    answered.length > 0
+      ? [...answered].sort((a, b) => a.deviation - b.deviation)[0]
+      : null;
+  const worst =
+    results.length > 0
+      ? [...results].sort((a, b) => b.deviation - a.deviation)[0]
+      : null;
   const label = getAccuracyLabel(avgDeviation);
 
   return (
@@ -771,45 +1205,79 @@ function ResultScreen({ results, onRestart }: { results: GameResult[]; onRestart
           Итоги сессии
         </div>
 
-        <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{label.title}</h2>
+        <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
+          {label.title}
+        </h2>
         <p className="mt-3 text-sm leading-6 text-slate-600">{label.subtitle}</p>
+        {selectedCategory && (
+          <div className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
+            Категория: {sessionCategoryMeta[selectedCategory].title}
+          </div>
+        )}
 
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-3xl bg-slate-900 p-4 text-white">
             <div className="text-sm text-white/70">Среднее отклонение</div>
-            <div className="mt-1 text-3xl font-bold">{Math.round(avgDeviation * 100)}%</div>
+            <div className="mt-1 text-3xl font-bold">
+              {Math.round(avgDeviation * 100)}%
+            </div>
           </div>
           <div className="rounded-3xl bg-slate-50 p-4">
             <div className="text-sm text-slate-500">Отвечено вовремя</div>
-            <div className="mt-1 text-3xl font-bold text-slate-900">{answered.length}/{results.length}</div>
+            <div className="mt-1 text-3xl font-bold text-slate-900">
+              {answered.length}/{results.length}
+            </div>
           </div>
         </div>
 
         <div className="mt-5 space-y-3">
           <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-4">
             <div className="text-sm text-emerald-700">Лучшая попытка</div>
-            <div className="mt-1 font-semibold text-slate-900">{best ? best.item.title : "—"}</div>
-            <div className="mt-1 text-sm text-slate-600">{best ? `${Math.round(best.deviation * 100)}% отклонения` : "Нет ответа"}</div>
+            <div className="mt-1 font-semibold text-slate-900">
+              {best ? best.item.title : "—"}
+            </div>
+            <div className="mt-1 text-sm text-slate-600">
+              {best
+                ? `${Math.round(best.deviation * 100)}% отклонения`
+                : "Нет ответа"}
+            </div>
           </div>
 
           <div className="rounded-3xl border border-rose-100 bg-rose-50/70 p-4">
             <div className="text-sm text-rose-700">Самый сложный кейс</div>
-            <div className="mt-1 font-semibold text-slate-900">{worst ? worst.item.title : "—"}</div>
-            <div className="mt-1 text-sm text-slate-600">{worst ? `${Math.round(worst.deviation * 100)}% отклонения` : "Нет данных"}</div>
+            <div className="mt-1 font-semibold text-slate-900">
+              {worst ? worst.item.title : "—"}
+            </div>
+            <div className="mt-1 text-sm text-slate-600">
+              {worst
+                ? `${Math.round(worst.deviation * 100)}% отклонения`
+                : "Нет данных"}
+            </div>
           </div>
         </div>
 
         <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-          <div className="mb-3 text-sm font-semibold text-slate-700">Все 5 карточек</div>
+          <div className="mb-3 text-sm font-semibold text-slate-700">
+            Все 5 карточек
+          </div>
           <div className="space-y-2">
             {results.map((result, index) => (
-              <div key={result.item.id} className="flex items-center justify-between rounded-2xl bg-white px-3 py-3 text-sm shadow-sm">
+              <div
+                key={result.item.id}
+                className="flex items-center justify-between rounded-2xl bg-white px-3 py-3 text-sm shadow-sm"
+              >
                 <div className="min-w-0 pr-3">
-                  <div className="truncate font-medium text-slate-900">{index + 1}. {result.item.title}</div>
-                  <div className="text-slate-500">Рынок: {formatPrice(result.item.marketPrice)}</div>
+                  <div className="truncate font-medium text-slate-900">
+                    {index + 1}. {result.item.title}
+                  </div>
+                  <div className="text-slate-500">
+                    Рынок: {formatPrice(result.item.marketPrice)}
+                  </div>
                 </div>
                 <div className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
-                  {result.timedOut ? "Тайм-аут" : `${Math.round(result.deviation * 100)}%`}
+                  {result.timedOut
+                    ? "Тайм-аут"
+                    : `${Math.round(result.deviation * 100)}%`}
                 </div>
               </div>
             ))}
@@ -835,6 +1303,9 @@ function GameScreen({
   guess,
   onGuessChange,
   onSubmit,
+  hintUsed,
+  onUseHint,
+  hintValue,
 }: {
   deck: CaseItem[];
   roundIndex: number;
@@ -842,6 +1313,9 @@ function GameScreen({
   guess: number;
   onGuessChange: (next: number) => void;
   onSubmit: () => void;
+  hintUsed: boolean;
+  onUseHint: () => void;
+  hintValue: number | null;
 }) {
   const item = deck[roundIndex];
 
@@ -852,15 +1326,25 @@ function GameScreen({
       <div className="mx-auto max-w-[430px]">
         <div className="mb-4 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/75 px-4 py-3 shadow-sm backdrop-blur-xl">
           <div>
-            <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Серия</div>
-            <div className="mt-1 text-xl font-bold text-slate-900">{roundIndex + 1} / {ROUND_LIMIT}</div>
+            <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+              Серия
+            </div>
+            <div className="mt-1 text-xl font-bold text-slate-900">
+              {roundIndex + 1} / {ROUND_LIMIT}
+            </div>
           </div>
           <div className="text-right">
             <div className="flex items-center justify-end gap-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
               <TimerReset size={14} />
               Таймер
             </div>
-            <div className={`mt-1 text-xl font-bold ${timeLeft <= 7 ? "text-rose-500" : "text-slate-900"}`}>{timeLeft}с</div>
+            <div
+              className={`mt-1 text-xl font-bold ${
+                timeLeft <= 7 ? "text-rose-500" : "text-slate-900"
+              }`}
+            >
+              {timeLeft}с
+            </div>
           </div>
         </div>
 
@@ -868,12 +1352,25 @@ function GameScreen({
           <ListingVisual item={item} />
 
           <div className="mt-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="text-4xl font-bold tracking-tight text-slate-900">{item.title}</div>
+            <div className="min-w-0">
+              <div className="text-4xl font-bold tracking-tight text-slate-900">
+                {item.title}
+              </div>
+            </div>
+
+            {hintValue !== null && (
+              <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                Цена такого товара новым: <span className="font-semibold">{formatPrice(hintValue)}</span>
+              </div>
+            )}
+
             <div className="mt-4 grid grid-cols-2 gap-3">
               {item.fields.map(([label, value]) => (
                 <div key={label} className="rounded-2xl bg-slate-50 p-3">
                   <div className="text-xs text-slate-400">{label}</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-800">{value}</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-800">
+                    {value}
+                  </div>
                 </div>
               ))}
             </div>
@@ -883,8 +1380,16 @@ function GameScreen({
             </div>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-5 space-y-3">
             <GuessSlider item={item} value={guess} onChange={onGuessChange} />
+            <button
+              onClick={onUseHint}
+              disabled={hintUsed}
+              className="flex w-full items-center justify-center gap-2 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition enabled:hover:border-slate-300 enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <Tag size={16} />
+              Посмотреть цену нового
+            </button>
           </div>
 
           <button
@@ -900,33 +1405,72 @@ function GameScreen({
 }
 
 function runSelfChecks() {
-  console.assert(formatPrice(47000) === "47 000 ₽" || formatPrice(47000) === "47 000 ₽", "formatPrice should format rubles");
+  console.assert(
+    formatPrice(47000) === "47 000 ₽" || formatPrice(47000) === "47 000 ₽",
+    "formatPrice should format rubles",
+  );
   console.assert(clamp(10, 0, 5) === 5, "clamp upper bound failed");
   console.assert(clamp(-3, 0, 5) === 0, "clamp lower bound failed");
-  console.assert(roundToStep(14550, 500) === 14500, "roundToStep should snap to step");
-  console.assert(getDeviation(100, 100) === 0, "getDeviation exact match failed");
-  console.assert(Math.round(getDeviation(120, 100) * 100) === 20, "getDeviation percentage failed");
+  console.assert(
+    roundToStep(14550, 500) === 14500,
+    "roundToStep should snap to step",
+  );
+  console.assert(
+    getDeviation(100, 100) === 0,
+    "getDeviation exact match failed",
+  );
+  console.assert(
+    Math.round(getDeviation(120, 100) * 100) === 20,
+    "getDeviation percentage failed",
+  );
   console.assert(cases.length === 30, "Expected 30 cases in prototype data");
+  console.assert(
+    cases.filter((item) => item.sessionCategory === "electronics").length >= 5,
+    "Need at least 5 electronics items",
+  );
+  console.assert(
+    cases.filter((item) => item.sessionCategory === "homeLiving").length >= 5,
+    "Need at least 5 homeLiving items",
+  );
+  console.assert(
+    cases.filter((item) => item.sessionCategory === "lifestyle").length >= 5,
+    "Need at least 5 lifestyle items",
+  );
+  console.assert(
+    getNewPrice(cases[0]) > cases[0].marketPrice,
+    "New price hint must be above market price",
+  );
 }
 
 runSelfChecks();
 
 export default function AvitoPriceSensePrototype() {
-  const [phase, setPhase] = useState<"start" | "playing" | "feedback" | "result">("start");
+  const [phase, setPhase] =
+    useState<"start" | "playing" | "feedback" | "result">("start");
   const [deck, setDeck] = useState<CaseItem[]>([]);
   const [roundIndex, setRoundIndex] = useState(0);
   const [guess, setGuess] = useState(0);
   const [timeLeft, setTimeLeft] = useState(CARD_TIME);
   const [results, setResults] = useState<GameResult[]>([]);
   const [feedbackResult, setFeedbackResult] = useState<GameResult | null>(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState<SessionCategory | null>(null);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [hintValue, setHintValue] = useState<number | null>(null);
 
   const currentItem = deck[roundIndex];
+
+  const availableDeck = useMemo(() => {
+    if (!selectedCategory) return [] as CaseItem[];
+    return cases.filter((item) => item.sessionCategory === selectedCategory);
+  }, [selectedCategory]);
 
   const getInitialGuess = (item: CaseItem) =>
     roundToStep((item.slider.min + item.slider.max) / 2, item.slider.step);
 
   const startGame = () => {
-    const selectedDeck = shuffle(cases).slice(0, ROUND_LIMIT);
+    if (!selectedCategory) return;
+    const selectedDeck = shuffle(availableDeck).slice(0, ROUND_LIMIT);
     const firstItem = selectedDeck[0];
 
     setDeck(selectedDeck);
@@ -934,6 +1478,8 @@ export default function AvitoPriceSensePrototype() {
     setResults([]);
     setFeedbackResult(null);
     setTimeLeft(CARD_TIME);
+    setHintUsed(false);
+    setHintValue(null);
     setGuess(firstItem ? getInitialGuess(firstItem) : 0);
     setPhase("playing");
   };
@@ -949,10 +1495,15 @@ export default function AvitoPriceSensePrototype() {
     setRoundIndex(nextIndex);
     setTimeLeft(CARD_TIME);
     setGuess(getInitialGuess(nextItem));
+    setHintValue(null);
     setPhase("playing");
   };
 
-  const pushResult = (item: CaseItem, selectedGuess: number, timedOut = false) => {
+  const pushResult = (
+    item: CaseItem,
+    selectedGuess: number,
+    timedOut = false,
+  ) => {
     const fallbackGuess = getInitialGuess(item);
     const finalGuess = timedOut ? fallbackGuess : selectedGuess;
     const deviation = timedOut ? 1 : getDeviation(finalGuess, item.marketPrice);
@@ -972,6 +1523,24 @@ export default function AvitoPriceSensePrototype() {
   const submitGuess = () => {
     if (!currentItem) return;
     pushResult(currentItem, guess, false);
+  };
+
+  const useHint = () => {
+    if (!currentItem || hintUsed) return;
+    setHintUsed(true);
+    setHintValue(getNewPrice(currentItem));
+  };
+
+  const restartToMenu = () => {
+    setPhase("start");
+    setDeck([]);
+    setRoundIndex(0);
+    setGuess(0);
+    setTimeLeft(CARD_TIME);
+    setResults([]);
+    setFeedbackResult(null);
+    setHintUsed(false);
+    setHintValue(null);
   };
 
   useEffect(() => {
@@ -1000,15 +1569,33 @@ export default function AvitoPriceSensePrototype() {
   }, [phase, roundIndex, deck]);
 
   if (phase === "start") {
-    return <StartScreen onStart={startGame} />;
+    return (
+      <StartScreen
+        onStart={startGame}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+    );
   }
 
   if (phase === "feedback" && feedbackResult) {
-    return <FeedbackScreen result={feedbackResult} round={roundIndex + 1} total={ROUND_LIMIT} />;
+    return (
+      <FeedbackScreen
+        result={feedbackResult}
+        round={roundIndex + 1}
+        total={ROUND_LIMIT}
+      />
+    );
   }
 
   if (phase === "result") {
-    return <ResultScreen results={results} onRestart={startGame} />;
+    return (
+      <ResultScreen
+        results={results}
+        onRestart={restartToMenu}
+        selectedCategory={selectedCategory}
+      />
+    );
   }
 
   return (
@@ -1019,6 +1606,9 @@ export default function AvitoPriceSensePrototype() {
       guess={guess}
       onGuessChange={setGuess}
       onSubmit={submitGuess}
+      hintUsed={hintUsed}
+      onUseHint={useHint}
+      hintValue={hintValue}
     />
   );
 }

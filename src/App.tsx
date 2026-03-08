@@ -1184,26 +1184,26 @@ function ListingVisual({ item }: { item: CaseItem }) {
   return (
     <div className="grid grid-cols-[1.18fr_0.82fr] gap-2">
       <div
-        className={`relative overflow-hidden rounded-[24px] bg-gradient-to-br ${visual.accent} p-3 text-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]`}
+        className={`relative overflow-hidden rounded-[22px] bg-gradient-to-br ${visual.accent} p-2.5 text-white shadow-[0_12px_24px_rgba(15,23,42,0.14)]`}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.18),transparent_30%)]" />
-        <div className="relative flex h-[168px] flex-col justify-between">
-          <div className="inline-flex w-fit items-center rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
+        <div className="relative flex h-[136px] flex-col justify-between">
+          <div className="inline-flex w-fit items-center rounded-full bg-white/18 px-2 py-1 text-[10px] font-medium backdrop-blur-sm">
             {visual.tag}
           </div>
           <div className="flex items-center justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-[24px] bg-white/14 shadow-inner shadow-white/10 backdrop-blur-sm">
-              <Icon size={42} strokeWidth={1.75} />
+            <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[20px] bg-white/14 shadow-inner shadow-white/10 backdrop-blur-sm">
+              <Icon size={32} strokeWidth={1.75} />
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-2xl bg-black/10 px-3 py-2 backdrop-blur-sm">
+          <div className="flex items-center justify-between rounded-2xl bg-black/10 px-2.5 py-2 backdrop-blur-sm">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.16em] text-white/65">
+              <div className="text-[9px] uppercase tracking-[0.16em] text-white/65">
                 Фото 1
               </div>
-              <div className="mt-1 text-xs font-semibold">Главный ракурс</div>
+              <div className="mt-1 text-[11px] font-semibold">Главный ракурс</div>
             </div>
-            <div className="rounded-full bg-white/15 px-2.5 py-1 text-[11px]">
+            <div className="rounded-full bg-white/15 px-2 py-1 text-[10px]">
               1/3
             </div>
           </div>
@@ -1214,7 +1214,7 @@ function ListingVisual({ item }: { item: CaseItem }) {
         {["Фото 2", "Фото 3"].map((label, index) => (
           <div
             key={label}
-            className={`relative overflow-hidden rounded-[24px] bg-gradient-to-br ${visual.accentSoft} p-2 shadow-[0_12px_24px_rgba(15,23,42,0.07)]`}
+            className={`relative overflow-hidden rounded-[20px] bg-gradient-to-br ${visual.accentSoft} p-1.5 shadow-[0_10px_20px_rgba(15,23,42,0.06)]`}
           >
             <div
               className={`absolute inset-0 ${
@@ -1223,16 +1223,16 @@ function ListingVisual({ item }: { item: CaseItem }) {
                   : "bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.9),transparent_38%)]"
               }`}
             />
-            <div className="relative flex h-full flex-col justify-between rounded-[18px] border border-white/70 bg-white/55 p-3 backdrop-blur-sm">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
+            <div className="relative flex h-full flex-col justify-between rounded-[14px] border border-white/70 bg-white/55 p-2 backdrop-blur-sm">
+              <div className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
                 {label}
               </div>
-              <div className="flex items-center justify-center py-1.5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                  <Icon size={24} className="text-slate-700" strokeWidth={1.8} />
+              <div className="flex items-center justify-center py-1">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                  <Icon size={18} className="text-slate-700" strokeWidth={1.8} />
                 </div>
               </div>
-              <div className="text-xs font-medium text-slate-700">
+              <div className="text-[11px] font-medium text-slate-700">
                 {index === 0 ? "Деталь товара" : "Доп. снимок"}
               </div>
             </div>
@@ -1260,20 +1260,13 @@ function GuessSlider({
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-slate-900">
-            Ваша оценка б/у
-          </div>
-          <div className="mt-1 text-xs leading-5 text-slate-500">
-            Передвиньте ползунок и выберите цену.
-          </div>
-        </div>
+        <div className="text-sm font-semibold text-slate-900">Ваша оценка б/у</div>
         <span className="whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-sm font-medium text-slate-700 shadow-sm">
           {formatPrice(safeValue)}
         </span>
       </div>
 
-      <div className="mt-4 -mx-1 px-1">
+      <div className="mt-3 -mx-1 px-1">
         <div className="relative h-10">
           <div className="absolute left-0 right-0 top-1/2 h-3 -translate-y-1/2 rounded-full bg-slate-200" />
           <div
@@ -1388,11 +1381,6 @@ function StartScreen({
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 text-xs leading-5 text-slate-600">
-            5 товаров попадут в игру, а еще 2 неиспользованных товара покажут,
-            что можно купить на сумму вашей выгоды.
-          </div>
-
           <button
             onClick={onStart}
             disabled={!selectedCategory}
@@ -1419,6 +1407,7 @@ function FeedbackScreen({
   const status = getRoundStatus(result.deviation, result.timedOut);
   const savings = getSavings(result.item);
   const deviationPercent = Math.round(result.deviation * 100);
+  const guessDelta = Math.abs(result.guess - result.item.marketPrice);
   const isAccurate = !result.timedOut && result.deviation <= 0.18;
   const priceTone = result.timedOut
     ? "text-slate-900"
@@ -1432,6 +1421,13 @@ function FeedbackScreen({
       : result.deviation <= 0.18
         ? "bg-sky-500"
         : "bg-rose-500";
+  const marketDeltaLabel = result.timedOut
+    ? "Показали рынок автоматически"
+    : guessDelta === 0
+      ? "Точно в рынок"
+      : result.guess > result.item.marketPrice
+        ? `На ${formatPrice(guessDelta)} выше рынка`
+        : `На ${formatPrice(guessDelta)} ниже рынка`;
 
   return (
     <ScreenShell>
@@ -1447,8 +1443,8 @@ function FeedbackScreen({
           <div className="text-[24px] font-extrabold tracking-tight">{status.title}</div>
           <div className="mt-1 text-xs leading-5 opacity-80">
             {result.timedOut
-              ? "Показываем реальную цену б/у и выгоду по сравнению с новым товаром."
-              : "Сравните свою оценку с рынком и посмотрите выгоду покупки на Авито."}
+              ? "Не успели ответить — показываем рыночную цену и выгоду покупки б/у."
+              : "Сначала сравните свою цену с рынком, а потом посмотрите, сколько можно было сэкономить."}
           </div>
         </div>
 
@@ -1456,30 +1452,28 @@ function FeedbackScreen({
           {result.item.title}
         </h2>
 
-        <div className="mt-3 grid gap-2.5">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-2.5">
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="rounded-2xl bg-white p-3 shadow-sm">
-                <div className="text-xs text-slate-500">Ваша оценка</div>
-                <div className={`mt-1 text-xl font-bold ${priceTone}`}>
-                  {result.timedOut ? "—" : formatPrice(result.guess)}
-                </div>
+        <div className="mt-3 rounded-3xl border border-slate-200 bg-slate-50/80 p-3">
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-2xl bg-white p-3 shadow-sm">
+              <div className="text-xs text-slate-500">Ваша оценка</div>
+              <div className={`mt-1 text-xl font-bold ${priceTone}`}>
+                {result.timedOut ? "—" : formatPrice(result.guess)}
               </div>
+            </div>
 
-              <div className="rounded-2xl bg-white p-3 shadow-sm">
-                <div className="text-xs text-slate-500">Рыночная цена б/у</div>
-                <div className="mt-1 text-xl font-bold text-slate-900">
-                  {formatPrice(result.item.marketPrice)}
-                </div>
+            <div className="rounded-2xl bg-white p-3 shadow-sm">
+              <div className="text-xs text-slate-500">Рыночная цена б/у</div>
+              <div className="mt-1 text-xl font-bold text-slate-900">
+                {formatPrice(result.item.marketPrice)}
               </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-slate-700">Отклонение от рынка</span>
-              <span className="font-semibold text-slate-900">
-                {result.timedOut ? "Тайм-аут" : `${deviationPercent}%`}
+          <div className="mt-2.5 rounded-2xl bg-white px-3 py-2 shadow-sm">
+            <div className="flex items-center justify-between gap-3 text-xs">
+              <span className="font-semibold text-slate-900">{marketDeltaLabel}</span>
+              <span className="font-semibold text-slate-500">
+                {result.timedOut ? "—" : `${deviationPercent}%`}
               </span>
             </div>
             <div className="mt-2 h-2.5 rounded-full bg-slate-100">
@@ -1488,20 +1482,21 @@ function FeedbackScreen({
                 style={{ width: `${clamp(deviationPercent, 2, 100)}%` }}
               />
             </div>
-            <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-400">
-              <span>0%</span>
-              <span>100%</span>
-            </div>
           </div>
+        </div>
 
-          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/80 p-4">
-            <div className="text-base leading-7 text-emerald-900">
-              Выгоднее на <span className="font-bold">{formatPrice(savings.rubles)}</span>,
-              чем новое за {formatPrice(savings.newPrice)}
-            </div>
-            <div className="mt-1.5 text-xs text-emerald-800">
-              Около {savings.percent}% экономии при покупке на Авито
-            </div>
+        <div className="mt-3 rounded-3xl border border-emerald-100 bg-emerald-50/90 p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
+            Выгода покупки б/у
+          </div>
+          <div className="mt-2 text-[30px] font-bold leading-none tracking-tight text-emerald-900">
+            {formatPrice(savings.rubles)}
+          </div>
+          <div className="mt-2 text-sm leading-6 text-emerald-900">
+            Выгоднее, чем новое за <span className="font-semibold">{formatPrice(savings.newPrice)}</span>
+          </div>
+          <div className="mt-1 text-xs text-emerald-800">
+            Около {savings.percent}% экономии при покупке на Авито
           </div>
         </div>
       </div>
@@ -1707,27 +1702,17 @@ function GameScreen({
     <ScreenShell>
       <div className="rounded-[30px] border border-white/70 bg-white/90 p-3.5 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur-xl">
         <div className="mb-3 rounded-[24px] border border-white/70 bg-white/80 px-3.5 py-3 shadow-sm backdrop-blur-xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">
-                Серия
-              </div>
-              <div className="mt-1 text-lg font-bold text-slate-900">
-                {roundIndex + 1} / {ROUND_LIMIT}
-              </div>
+          <div className="flex items-center justify-between text-sm font-semibold text-slate-900">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500">Серия</span>
+              <span>{roundIndex + 1} / {ROUND_LIMIT}</span>
             </div>
-            <div className="text-right">
-              <div className="flex items-center justify-end gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">
-                <TimerReset size={13} />
-                Таймер
-              </div>
-              <div
-                className={`mt-1 text-lg font-bold ${
-                  timeLeft <= 7 ? "text-rose-500" : "text-slate-900"
-                }`}
-              >
+            <div className="flex items-center gap-2">
+              <TimerReset size={14} className="text-slate-400" />
+              <span className="text-slate-500">Таймер</span>
+              <span className={timeLeft <= 7 ? "text-rose-500" : "text-slate-900"}>
                 {timeLeft}с
-              </div>
+              </span>
             </div>
           </div>
           <div className="mt-2.5 h-2 rounded-full bg-slate-100">
@@ -1749,15 +1734,17 @@ function GameScreen({
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {item.fields.map(([label, fieldValue]) => (
-              <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                <div className="text-[11px] leading-4 text-slate-400">{label}</div>
-                <div className="mt-0.5 text-xs font-semibold leading-4 text-slate-800">
-                  {fieldValue}
+          <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+              {item.fields.map(([label, fieldValue]) => (
+                <div key={label} className="min-w-0">
+                  <div className="text-[11px] leading-4 text-slate-400">{label}</div>
+                  <div className="mt-0.5 truncate text-xs font-semibold leading-4 text-slate-800">
+                    {fieldValue}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600">
@@ -1767,12 +1754,14 @@ function GameScreen({
         </div>
 
         <div className="mt-3 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
-          <div className="rounded-2xl bg-slate-900 px-4 py-3 text-white">
-            <div className="text-[11px] uppercase tracking-[0.16em] text-white/60">
-              Цена нового
-            </div>
-            <div className="mt-1 text-[28px] font-bold tracking-tight">
-              {formatPrice(savings.newPrice)}
+          <div className="rounded-2xl bg-slate-900 px-4 py-2.5 text-white">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-white/65">
+                Цена нового
+              </div>
+              <div className="whitespace-nowrap text-2xl font-bold tracking-tight">
+                {formatPrice(savings.newPrice)}
+              </div>
             </div>
           </div>
 

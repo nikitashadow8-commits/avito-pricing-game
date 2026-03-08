@@ -1247,10 +1247,12 @@ function GuessSlider({
   item,
   value,
   onChange,
+  onSubmit,
 }: {
   item: CaseItem;
   value: number;
   onChange: (next: number) => void;
+  onSubmit: () => void;
 }) {
   const { min, max } = getSliderBounds(item);
   const safeValue = normalizeGuess(item, value);
@@ -1289,6 +1291,13 @@ function GuessSlider({
         <span>{formatPrice(min)}</span>
         <span>{formatPrice(max)}</span>
       </div>
+
+      <button
+        onClick={onSubmit}
+        className="mt-3 flex w-full items-center justify-center rounded-[20px] bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
+      >
+        Зафиксировать цену
+      </button>
     </div>
   );
 }
@@ -1696,32 +1705,21 @@ function GameScreen({
   if (!item) return null;
 
   const savings = getSavings(item);
-  const timerProgress = clamp((timeLeft / CARD_TIME) * 100, 0, 100);
 
   return (
     <ScreenShell>
       <div className="rounded-[30px] border border-white/70 bg-white/90 p-3.5 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur-xl">
-        <div className="mb-3 rounded-[24px] border border-white/70 bg-white/80 px-3.5 py-3 shadow-sm backdrop-blur-xl">
-          <div className="flex items-center justify-between text-sm font-semibold text-slate-900">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500">Серия</span>
-              <span>{roundIndex + 1} / {ROUND_LIMIT}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <TimerReset size={14} className="text-slate-400" />
-              <span className="text-slate-500">Таймер</span>
-              <span className={timeLeft <= 7 ? "text-rose-500" : "text-slate-900"}>
-                {timeLeft}с
-              </span>
-            </div>
+        <div className="mb-2 flex items-center justify-between">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm">
+            <span className="text-slate-500">Серия</span>
+            <span>{roundIndex + 1} / {ROUND_LIMIT}</span>
           </div>
-          <div className="mt-2.5 h-2 rounded-full bg-slate-100">
-            <div
-              className={`h-2 rounded-full transition-all ${
-                timeLeft <= 7 ? "bg-rose-500" : "bg-slate-900"
-              }`}
-              style={{ width: `${timerProgress}%` }}
-            />
+
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm">
+            <TimerReset size={12} className="text-slate-400" />
+            <span className={timeLeft <= 7 ? "text-rose-500" : "text-slate-700"}>
+              {timeLeft}с
+            </span>
           </div>
         </div>
 
@@ -1766,16 +1764,14 @@ function GameScreen({
           </div>
 
           <div className="mt-3 rounded-2xl bg-white px-3 py-3 shadow-sm">
-            <GuessSlider item={item} value={guess} onChange={onGuessChange} />
+            <GuessSlider
+              item={item}
+              value={guess}
+              onChange={onGuessChange}
+              onSubmit={onSubmit}
+            />
           </div>
         </div>
-
-        <button
-          onClick={onSubmit}
-          className="mt-3 flex w-full items-center justify-center rounded-[24px] bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
-        >
-          Зафиксировать цену
-        </button>
       </div>
     </ScreenShell>
   );
